@@ -2,6 +2,17 @@
 export const EDITABLE_SETTINGS = ["network_max_connections", "network_idle_timeout", "logging_level", "general_language"] as const;
 export type EditableSetting = typeof EDITABLE_SETTINGS[number];
 export type EditableValues = Record<EditableSetting, string>;
+export type ConfigurationFailureNotice = "configEditAuth" | "configEditStale" | "configEditRejected" |
+  "configEditUnknown" | "configEditUnavailable";
+
+// A missing or malformed response to a write/restore does not prove the
+// operation failed: the INI may already have been atomically replaced.
+export function configurationFailureNotice(error: unknown, mutation: boolean): ConfigurationFailureNotice {
+  const key = error instanceof Error ? error.message : "";
+  if (key === "configEditAuth" || key === "configEditStale" || key === "configEditRejected" ||
+      key === "configEditUnknown") return key;
+  return mutation ? "configEditUnknown" : "configEditUnavailable";
+}
 export interface ConfigurationReview {
   schema: 1;
   maintenance: true;

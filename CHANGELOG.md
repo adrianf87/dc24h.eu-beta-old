@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — beta-0.1.4 editor corrections
+
+- A lost, timed-out or malformed response after a WebAdmin configuration write or restore is now treated as an **unknown outcome**, not proof that the API operation failed. The editor discards its cached revision and proposed values so an operator cannot continue with stale data. A refused/expired administrator grant also clears the loaded configuration.
+- Regression tests cover unknown-outcome classification and a lost write response in the browser. No C++ writer, API contract, ADC/ADCS behavior, MariaDB migration or service control changed.
+
 ## beta-0.1.6 — 2026-11-20
 
 Owner-only local service control — development branch `beta-0.1.6`, based on protected main `463e56e`.

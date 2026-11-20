@@ -65,3 +65,30 @@ test("maintenance editor validates, previews, confirms, writes and restores in E
   await page.getByLabel("Interface language").selectOption("pl");
   await expect(page.getByRole("heading",{name:"Edytor konfiguracji serwisowej"})).toBeVisible();
 });
+
+test("lost write response shows unknown outcome and discards the old revision",async({page})=>{
+  await page.route("**/admin-api/v1/**",async route=>{
+    const request=route.request(),url=new URL(request.url());
+    if(url.pathname==="/admin-api/v1/admin/access")return route.fulfill({json:access});
+    if(url.pathname==="/admin-api/v1/admin")return route.fulfill({json:administration});
+    if(url.pathname==="/admin-api/v1/management/configuration")
+      return route.fulfill({json:request.method()==="GET"?review:{valid:true,written:false,restart_required:true}});
+    if(url.pathname==="/admin-api/v1/management/configuration/write")return route.abort("connectionreset");
+    return route.fallback();
+  });
+  await page.goto("/#adminCore");
+  await page.getByLabel("Active account ID").fill("1");
+  await page.getByLabel("Account password").fill("Secret operator password!");
+  await page.getByRole("button",{name:"Prove access",exact:true}).click();
+  await expect(page.getByTestId("admin-access-result")).toContainText("Access proved");
+  await page.evaluate(()=>{location.hash="#configuration";});
+  await page.getByRole("button",{name:"Load / refresh saved configuration"}).click();
+  await page.getByTestId("config-input-network_max_connections").fill("256");
+  await page.getByRole("button",{name:"Validate and preview changes"}).click();
+  await expect(page.getByTestId("configuration-preview")).toBeVisible();
+  await page.getByText("I have reviewed the changes").click();
+  await page.getByRole("button",{name:"Save configuration"}).click();
+  await expect(page.getByTestId("configuration-editor-status")).toContainText("result may be unknown");
+  await expect(page.getByTestId("config-input-network_max_connections")).toHaveCount(0);
+  await expect(page.getByTestId("configuration-preview")).toHaveCount(0);
+});

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {configurationChanges, configurationForm, parseConfigurationReview, parseConfigurationValidation,
+import {configurationChanges, configurationFailureNotice, configurationForm, parseConfigurationReview, parseConfigurationValidation,
   parseConfigurationWrite, validSetting} from "../src/lib/configuration-editor.ts";
 
 const revision="a".repeat(64);
@@ -36,4 +36,14 @@ test("configuration editor fails closed on malformed payloads and invalid values
   assert.throws(()=>parseConfigurationValidation({valid:true,written:true,restart_required:true}));
   assert.throws(()=>parseConfigurationWrite({written:false,restart_required:true,revision,backup_available:true}));
   assert.throws(()=>parseConfigurationWrite({written:true,restart_required:true,revision,backup_available:false}));
+});
+
+test("a lost write/restore response is an unknown outcome, not a definite failure",()=>{
+  for(const error of [new Error("Failed to fetch"),new Error("AbortError"),new SyntaxError("invalid JSON"),undefined]) {
+    assert.equal(configurationFailureNotice(error,false),"configEditUnavailable");
+    assert.equal(configurationFailureNotice(error,true),"configEditUnknown");
+  }
+  for(const key of ["configEditAuth","configEditStale","configEditRejected","configEditUnknown"]) {
+    assert.equal(configurationFailureNotice(new Error(key),true),key);
+  }
 });

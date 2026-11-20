@@ -17,6 +17,6 @@ Przykładowy Apache zachowuje `Require local` oraz dokładną kontrolę hosta, p
 
 Hasła, tokeny, klucze TLS, ścieżki plików, pełny INI i dowolne klucze nie trafiają do JavaScript. Ogólny kontrakt `management/authorize` pozostaje niezaimplementowany; ograniczony edytor korzysta z oddzielnie autoryzowanych tras.
 
-`409 stale` usuwa starą rewizję — wymagany ponowny odczyt. `422` oznacza odmowę walidacji. Błąd sieci lub `503 outcome_unknown` **nie pozwala na automatyczne powtórzenie**: sprawdź INI, `.dc24h.bak`, `.dc24h.undo` oraz audyt. Jedna generacja kopii nie zastępuje kopii operatora. Każda zmiana wymaga kontrolowanego restartu.
+`409 stale` usuwa starą rewizję — wymagany ponowny odczyt. `422` oznacza odmowę walidacji. Jeśli po zapisie lub przywracaniu zabraknie odpowiedzi (błąd sieci, przekroczenie czasu albo niepoprawna odpowiedź sukcesu), edytor oznacza wynik jako **nieznany** i usuwa zapamiętaną rewizję oraz formularz. Plik INI mógł już zostać zmieniony. Nie ponawiaj operacji: sprawdź INI, `.dc24h.bak`, `.dc24h.undo` oraz audyt. Odmowa dostępu lub wygaśnięcie grantu również czyści wczytaną konfigurację. Jedna generacja kopii nie zastępuje kopii operatora. Każda zmiana wymaga kontrolowanego restartu.
 
 Testy jednostkowe, adaptera, Apache i przeglądarki obejmują walidację, filtrowanie danych, grant/CSRF/pochodzenie, dokładne trasy, podgląd, potwierdzenia oraz PL/US. Przed scaleniem wymagane są pełne CI i CodeQL C++/WebAdmin. Brak przeładowywania na żywo i kontrolera usługi.

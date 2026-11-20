@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import type {Copy} from "../languages/us";
 import {adminHeaders} from "../lib/adminAccess";
-import {EDITABLE_SETTINGS, configurationChanges, configurationForm, parseConfigurationReview,
+import {EDITABLE_SETTINGS, configurationChanges, configurationFailureNotice, configurationForm, parseConfigurationReview,
   parseConfigurationValidation, parseConfigurationWrite, validSetting} from "../lib/configuration-editor";
 import type {ConfigurationReview, EditableSetting, EditableValues} from "../lib/configuration-editor";
 
@@ -61,12 +61,10 @@ export function ConfigurationEditor({t}: {t: Copy}) {
     }
   }
 
-  function failed(error: unknown) {
-    const key = error instanceof Error ? error.message : "";
-    const known: Notice[] = ["configEditAuth", "configEditStale", "configEditRejected", "configEditUnknown"];
-    const next = known.includes(key as Notice) ? key as Notice : "configEditUnavailable";
+  function failed(error: unknown, mutation = false) {
+    const next = configurationFailureNotice(error, mutation);
     setNotice(next);
-    if (next === "configEditStale" || next === "configEditUnknown") {
+    if (next === "configEditStale" || next === "configEditUnknown" || next === "configEditAuth") {
       setReview(null); setDraft(null);
     }
     setPreview(null);
@@ -123,7 +121,7 @@ export function ConfigurationEditor({t}: {t: Copy}) {
       setReview({...review, revision: result.revision, saved,
         matches_active: EDITABLE_SETTINGS.every(key => saved[key] === review.active[key])});
       setDraft(saved); setPreview(null); setConfirmWrite(false); setRestart(true); setNotice("configEditSaved");
-    } catch (error) { failed(error); }
+    } catch (error) { failed(error, true); }
     finally { setBusy(false); }
   }
 
@@ -133,7 +131,7 @@ export function ConfigurationEditor({t}: {t: Copy}) {
     try {
       await run(paths.restore, new URLSearchParams({revision: review.revision}), parseConfigurationWrite);
       setReview(null); setDraft(null); setRestart(true); setNotice("configEditRestored");
-    } catch (error) { failed(error); }
+    } catch (error) { failed(error, true); }
     finally { setBusy(false); }
   }
 

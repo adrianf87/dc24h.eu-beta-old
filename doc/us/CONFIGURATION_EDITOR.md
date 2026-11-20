@@ -17,6 +17,6 @@ The example Apache configuration retains `Require local` and exact host, origin,
 
 Passwords, tokens, TLS keys, file paths, complete INI contents and arbitrary keys never enter browser JavaScript. The broad `management/authorize` compatibility contract remains unimplemented; this narrower editor uses independently authorized routes.
 
-A `409 stale` clears the loaded revision; read the INI again. A `422` refuses invalid proposals. A network error or `503 outcome_unknown` must **not** cause automatic retry: inspect the INI, `.dc24h.bak`, `.dc24h.undo` and audit first. A single backup generation is not a substitute for operator backups. Every saved change requires a controlled restart.
+A `409 stale` clears the loaded revision; read the INI again. A `422` refuses invalid proposals. If a write or restore loses its response (network failure, timeout or malformed success response), the editor marks the outcome **unknown** and discards the cached revision and draft. The INI may already have changed. Do not retry: inspect the INI, `.dc24h.bak`, `.dc24h.undo` and audit first. An expired/refused grant also clears the loaded configuration. A single backup generation is not a substitute for operator backups. Every saved change requires a controlled restart.
 
 Unit, adapter, Apache and browser tests cover input validation, redaction, grant/CSRF/origin checks, exact routes, preview, confirmation and both languages. Full C++/WebAdmin CI and CodeQL are required before merge. No live reload or service controller is included.
