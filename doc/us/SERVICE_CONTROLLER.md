@@ -26,4 +26,6 @@ When systemd is not available the response is `{"schema":1,"available":false,"er
 
 ## Tests and limitations
 
+Audit fix: a valid `STATUS\n` can arrive in multiple Unix-stream fragments; the controller now collects them under one 2-second deadline while still rejecting extra or malformed bytes. An existing socket is removed as stale only after an explicit `ECONNREFUSED` probe. Access-denied and other inconclusive failures leave the socket untouched. Regression tests cover both cases.
+
 `service.controller.process` checks status replies with no hub started, invalid action refusals, a duplicate controller, socket cleanup, symlink protection, unsafe parent permissions and release metadata. The live manager's availability is environment-dependent; tests do not modify the host `dc24h.service`. The example unit is not automatically installed or tested on a live production host. This change does not modify ADC/ADCS behavior, the maintenance API, Apache, WebAdmin controls, MariaDB schema v10 or audit storage. It does not activate `hub.manage` in the application permission catalog. Owner-gated Start/Stop/Restart and auditable service actions belong to beta-0.1.6; the WebAdmin controls belong to beta-0.1.7.

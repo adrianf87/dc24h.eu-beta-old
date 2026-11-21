@@ -63,6 +63,16 @@ class ControllerProcessTests(unittest.TestCase):
                     self.assertEqual(request(path, payload), {"error": "unsupported_request"})
                 self.assertEqual(request(path), response)
 
+                # A Unix stream can split one valid request into multiple
+                # reads; the controller must wait for the bounded newline.
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as fragmented:
+                    fragmented.settimeout(5)
+                    fragmented.connect(str(path))
+                    fragmented.sendall(b"STA")
+                    time.sleep(0.05)
+                    fragmented.sendall(b"TUS\n")
+                    self.assertEqual(json.loads(fragmented.recv(4096)), response)
+
                 duplicate = subprocess.run([str(CONTROLLER), "--socket", str(path)],
                                            capture_output=True, timeout=5)
                 self.assertNotEqual(duplicate.returncode, 0)
@@ -73,6 +83,22 @@ class ControllerProcessTests(unittest.TestCase):
                 if process.stderr:
                     process.stderr.close()
             self.assertFalse(path.exists())
+
+    def test_refuses_to_replace_inaccessible_live_socket(self):
+        with tempfile.TemporaryDirectory(prefix="dc24h-control-") as directory:
+            root = Path(directory)
+            root.chmod(0o700)
+            path = root / "status.sock"
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(str(path))
+                listener.listen(1)
+                path.chmod(0o000)
+                attempted = subprocess.run([str(CONTROLLER), "--socket", str(path)],
+                                           capture_output=True, timeout=5)
+                self.assertNotEqual(attempted.returncode, 0)
+                self.assertTrue(path.exists())
+                self.assertTrue(stat.S_ISSOCK(path.lstat().st_mode))
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o000)
 
     def test_rejects_untrusted_socket_path(self):
         with tempfile.TemporaryDirectory(prefix="dc24h-control-") as directory:

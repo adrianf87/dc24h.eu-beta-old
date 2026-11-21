@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -115,6 +116,33 @@ std::string status_json() {
         "\",\"active_state\":\""+active+"\",\"sub_state\":\""+sub+"\",\"result\":\""+result+"\"}\n";
 }
 
+// SOCK_STREAM may split one command across reads. Read through its newline
+// under a single deadline, without accepting trailing bytes or unbounded input.
+std::optional<std::string> read_command(int fd) {
+    std::string command;
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+    while(command.size()<32 && std::chrono::steady_clock::now()<deadline) {
+        struct pollfd pfd{fd,POLLIN,0};
+        const auto remaining=std::chrono::duration_cast<std::chrono::milliseconds>(deadline-std::chrono::steady_clock::now()).count();
+        const int ready=::poll(&pfd,1,static_cast<int>(std::max(0L,remaining)));
+        if(ready<0){if(errno==EINTR)continue;return std::nullopt;}
+        if(ready==0)return std::string{};
+        char bytes[32];
+        const auto count=::recv(fd,bytes,sizeof(bytes)-command.size(),MSG_DONTWAIT);
+        if(count<0){if(errno==EINTR||errno==EAGAIN)continue;return std::nullopt;}
+        if(count==0)return std::nullopt;
+        command.append(bytes,static_cast<std::size_t>(count));
+        const auto newline=command.find('\n');
+        if(newline!=std::string::npos) {
+            if(newline+1!=command.size())return std::string{};
+            char extra{};
+            if(::recv(fd,&extra,1,MSG_PEEK|MSG_DONTWAIT)>0)return std::string{};
+            return command;
+        }
+    }
+    return std::string{};
+}
+
 void serve_peer(int connection) {
     Fd peer(connection);
     struct ucred credentials{};
@@ -126,10 +154,9 @@ void serve_peer(int connection) {
     const struct timeval timeout{2,0};
     (void)::setsockopt(peer.value,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
     (void)::setsockopt(peer.value,SOL_SOCKET,SO_SNDTIMEO,&timeout,sizeof(timeout));
-    char request[32]{};
-    const auto size=::recv(peer.value,request,sizeof(request),0);
-    if(size<=0)return;
-    const std::string response=(std::string_view(request,static_cast<std::size_t>(size))=="STATUS\n")
+    const auto command=read_command(peer.value);
+    if(!command)return;
+    const std::string response=(*command=="STATUS\n")
         ?status_json():"{\"error\":\"unsupported_request\"}\n";
     (void)::send(peer.value,response.data(),response.size(),MSG_NOSIGNAL);
 }
@@ -159,8 +186,12 @@ int run(std::string_view pathname) {
         Fd probe(::socket(AF_UNIX,SOCK_STREAM|SOCK_CLOEXEC,0));
         sockaddr_un address{};address.sun_family=AF_UNIX;
         std::strncpy(address.sun_path,path.c_str(),sizeof(address.sun_path)-1);
-        if(probe.value>=0&&::connect(probe.value,reinterpret_cast<sockaddr*>(&address),sizeof(address))==0)
+        if(probe.value<0)throw std::runtime_error("Cannot probe existing controller socket");
+        if(::connect(probe.value,reinterpret_cast<sockaddr*>(&address),sizeof(address))==0)
             throw std::runtime_error("Controller already running");
+        // Only ECONNREFUSED establishes that the socket has no listener.
+        // EACCES, EINTR and resource failures must never remove a live socket.
+        if(errno!=ECONNREFUSED)throw std::runtime_error("Cannot verify stale controller socket");
         if(::unlink(path.c_str())!=0)throw std::runtime_error("Cannot clear stale socket");
     }
     sockaddr_un address{};address.sun_family=AF_UNIX;

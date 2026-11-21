@@ -7,6 +7,7 @@ Independent, read-only systemd hub status controller — development branch `bet
 - Added the separately executable `dc24h-service-controller`. It answers only a fixed local Unix socket `STATUS` request, checks `SO_PEERCRED` and a private socket parent, and queries the fixed `dc24h.service` unit through a bounded, no-shell `systemctl show` subprocess. It operates with the serving hub stopped.
 - Shipped review-only systemd and sysusers examples for the isolated controller account and narrow group; no host unit is installed or enabled. Process tests cover status and unavailable-systemd responses, refusal of START/STOP/RESTART, duplicate instances, symlink defense and socket cleanup.
 - The hub, API and WebAdmin report `beta-0.1.5`; package tuple remains `0.1.0`. There are no new HTTP routes, WebAdmin buttons, service actions, database migrations or audit schema changes; `hub.manage` stays non-executable. Owner-checked actions and auditing remain beta-0.1.6 work. No ADC/ADCS behavior changes.
+- Controller hardening: read a complete, bounded Unix-stream command even when it arrives in several fragments, and never unlink an existing socket unless the probe specifically returns `ECONNREFUSED`. Added regression tests for fragmented status and an inaccessible live socket; no protocol or privilege expansion.
 
 ## beta-0.1.4 — 2026-11-20
 
