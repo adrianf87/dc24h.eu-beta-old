@@ -8,6 +8,7 @@ WebAdmin configuration editor — development branch `beta-0.1.4`, based on prot
 - Exact Node adapter and Apache allowlists forward the maintenance configuration review, write and restore endpoints only with the established process bearer, administrator grant, session, CSRF, same-origin form and loopback restrictions. Secrets and arbitrary file paths remain excluded.
 - A successful save or restore clearly requires a controlled hub restart. Stale revisions block further actions until a reload; ambiguous results are never retried automatically. The editor stays outside the hub process and has no service commands.
 - EN/US and Polish UI, validation tests, browser tests and adapter/Apache rejection tests accompany the release. Schema v10 and the backend atomic storage format are unchanged.
+- Maintenance fixes: reject duplicate proposal keys, validate the exact serialized INI size before confirming a preview, and refuse a no-op backup restore so the single undo generation is preserved. Added C++ regression tests; no schema or API changes.
 
 ## beta-0.1.3 — 2026-11-20
 

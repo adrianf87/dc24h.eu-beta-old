@@ -579,9 +579,18 @@ ReviewSnapshot Review::read() const {
     return result;
 }
 
+namespace {
+std::string patch_ini(std::string source, const std::vector<std::pair<std::string, std::string>>& changes);
+}
+
 bool Review::validate_candidate(std::string_view revision,
     const std::vector<std::pair<std::string, std::string>>& changes) const {
     if (changes.empty() || changes.size() > 4) { throw std::invalid_argument("Invalid review change set"); }
+    for (std::size_t i = 0; i < changes.size(); ++i) {
+        for (std::size_t j = 0; j < i; ++j) {
+            if (changes[i].first == changes[j].first) { throw std::invalid_argument("Duplicate review option"); }
+        }
+    }
     const auto data = read_file(filename_);
     if (revision_for(data) != revision) { throw StaleReview(); }
     auto candidate = parse_file_data(filename_, data);
@@ -591,6 +600,9 @@ bool Review::validate_candidate(std::string_view revision,
     }
     try {
         validate(candidate);
+        // Preview the actual INI bytes: a valid setting may still overflow the
+        // 64 KiB file or line limit when a missing key must be inserted.
+        validate(parse_file_data(filename_, patch_ini(data, changes)));
     } catch (const std::invalid_argument&) {
         return false;
     }
@@ -777,6 +789,9 @@ std::string Review::restore_backup(std::string_view revision) const {
     if (revision_for(current.text) != revision) { throw StaleReview(); }
     const auto backup = storage.backup();
     validate(parse_file_data(filename_, backup.text));
+    // A no-op restore would overwrite the only undo copy with the already
+    // restored bytes, preventing recovery of the previous configuration.
+    if (backup.text == current.text) { throw StaleReview(); }
     storage.check_primary(current.state);
     storage.persist_undo(current.text);
     storage.check_primary(current.state);

@@ -79,6 +79,15 @@ int main() {
         require(contents(temp.ini.string()+".dc24h.undo").find("max_connections = 256")!=std::string::npos);
         require(mode(temp.ini.string()+".dc24h.undo")==0600);
         rejects([&] { (void)review.restore_backup(updated); });
+        // Repeating restore with the current revision must not destroy the
+        // only undo generation or replace the saved pre-restore bytes.
+        const auto undo_before=contents(temp.ini.string()+".dc24h.undo");
+        bool already_restored=false;
+        try { (void)review.restore_backup(restored); }
+        catch (const StaleReview&) { already_restored=true; }
+        require(already_restored);
+        require(contents(temp.ini.string()+".dc24h.undo")==undo_before);
+        require(contents(temp.ini)==original);
         require(::chmod(temp.ini.c_str(),0666)==0);
         rejects([&] { (void)review.write_candidate(restored,{{"network_idle_timeout","160"}}); });
         require(::chmod(temp.ini.c_str(),0600)==0);

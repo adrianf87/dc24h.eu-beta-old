@@ -7,8 +7,8 @@ This stage connects the **beta-0.1.3 local maintenance API** to the WebAdmin Con
 1. Make independent INI/database backups, stop the hub and verify the private INI with `--check-config`. Apply schema migration v10 before running the separate maintenance process.
 2. Open the **loopback-only** WebAdmin. Prove an active Administrator or Owner account in **Admin Core**. The short-lived grant, session and CSRF secret remain in page memory, never in browser storage.
 3. Open **Configuration → Maintenance configuration editor** and load the saved INI. Available fields: `network_max_connections` (1–65535), `network_idle_timeout` (1–86400 seconds), `logging_level` (`info`, `warning`, `error`, `off`), `general_language` (`us`, `pl`). Saved settings and maintenance-startup values are distinct; neither is a snapshot of a running hub.
-4. Edit the fields and choose **Validate and preview changes**. The C++ parser checks the candidate and opaque HMAC revision without writing. The preview shows only changed keys; another edit invalidates it.
-5. Confirm the reviewed changes and click **Save configuration**. The atomic backend creates a private one-generation backup. Alternatively, confirm **Restore backup** to restore the previous INI and retain an undo copy. Refresh after restoration.
+4. Edit the fields and choose **Validate and preview changes**. The C++ parser checks the candidate, exact serialized INI limits and opaque HMAC revision without writing. Duplicate settings are refused. The preview shows only changed keys; another edit invalidates it.
+5. Confirm the reviewed changes and click **Save configuration**. The atomic backend creates a private one-generation backup. Alternatively, confirm **Restore backup** to restore the previous INI and retain an undo copy. Repeating a restore when the backup already matches the current INI is refused to protect that undo copy. Refresh after restoration.
 6. Verify the resulting INI, stop maintenance and restart the hub using the existing controlled operator procedure. The editor cannot control the service.
 
 ## Security boundary

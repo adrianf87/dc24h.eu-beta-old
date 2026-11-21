@@ -7,8 +7,8 @@ Ten etap łączy **lokalne API serwisowe beta-0.1.3** ze stroną Konfiguracja w 
 1. Wykonaj niezależne kopie INI/bazy, zatrzymaj hub i sprawdź prywatny INI przez `--check-config`. Zastosuj migrację v10 przed włączeniem oddzielnego procesu administracyjnego.
 2. Otwórz WebAdmin dostępny **wyłącznie lokalnie**. Potwierdź aktywne konto Administratora lub Ownera w **Administracja**. Krótkotrwały grant, sesja i CSRF istnieją tylko w pamięci strony, bez zapisu w magazynie przeglądarki.
 3. Wybierz **Konfiguracja → Edytor konfiguracji serwisowej** i wczytaj INI. Pola: `network_max_connections` (1–65535), `network_idle_timeout` (1–86400 sekund), `logging_level` (`info`, `warning`, `error`, `off`) oraz `general_language` (`us`, `pl`). Wartości zapisane i startowe procesu serwisowego są rozdzielone; żadna nie opisuje aktywnego huba.
-4. Edytuj i kliknij **Waliduj i pokaż podgląd**. Parser C++ sprawdza propozycję i niejawną rewizję HMAC bez zapisu. Podgląd zawiera tylko zmienione klucze, a kolejna edycja go unieważnia.
-5. Potwierdź sprawdzone różnice i wybierz **Zapisz konfigurację**. Zapis atomowy tworzy prywatną kopię jednej poprzedniej wersji. Możesz też potwierdzić **Przywróć kopię**, odtwarzając poprzedni INI i zachowując kopię cofnięcia. Po przywróceniu odśwież dane.
+4. Edytuj i kliknij **Waliduj i pokaż podgląd**. Parser C++ sprawdza propozycję, limity rozmiaru wynikowego pliku INI i niejawną rewizję HMAC bez zapisu. Powtórzone klucze są odrzucane. Podgląd zawiera tylko zmienione klucze, a kolejna edycja go unieważnia.
+5. Potwierdź sprawdzone różnice i wybierz **Zapisz konfigurację**. Zapis atomowy tworzy prywatną kopię jednej poprzedniej wersji. Możesz też potwierdzić **Przywróć kopię**, odtwarzając poprzedni INI i zachowując kopię cofnięcia. Ponowne przywrócenie identycznej kopii jest odrzucane, aby nie utracić możliwości cofnięcia. Po przywróceniu odśwież dane.
 6. Sprawdź wynikowy INI, zakończ serwis i uruchom hub ponownie zgodnie z dotychczasową kontrolowaną procedurą. Edytor nie steruje usługą.
 
 ## Granica bezpieczeństwa

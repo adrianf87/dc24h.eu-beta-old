@@ -58,6 +58,10 @@ int main() {
             require(field.value.find("secret-marker") == std::string::npos);
         }
         require(review.validate_candidate(first.revision, {{"network_max_connections", "256"}, {"logging_level", "warning"}}));
+        refused([&] { (void)review.validate_candidate(first.revision,
+            {{"network_max_connections", "256"}, {"network_max_connections", "300"}}); });
+        refused([&] { (void)review.validate_candidate(first.revision,
+            {{"logging_level", "warning"}, {"logging_level", "warning"}}); });
         require(!review.validate_candidate(first.revision, {{"network_max_connections", "0"}}));
         require(!review.validate_candidate(first.revision, {{"network_max_connections", "65536"}}));
         require(!review.validate_candidate(first.revision, {{"general_language", "en"}}));
@@ -86,6 +90,15 @@ int main() {
         refused([&] { (void)review.validate_candidate(second.revision, {{"network_idle_timeout", "120"}}); });
         ini.write(std::string(65537, 'x'));
         refused([&] { (void)review.read(); });
+        // Sixteen comment lines fit the 64 KiB source limit exactly. The
+        // proposed key is valid, but serializing it would exceed that limit.
+        std::string near_limit;
+        const std::string comment = "#" + std::string(4094, 'x') + "\n";
+        for (std::size_t i = 0; i < 16; ++i) { near_limit += comment; }
+        require(near_limit.size() == 65536);
+        ini.write(near_limit);
+        const auto full_review = review.read();
+        require(!review.validate_candidate(full_review.revision, {{"network_max_connections", "256"}}));
         ini.write(std::string("[network]\nmax_connections=128\n\0", 31));
         refused([&] { (void)review.read(); });
         fs::remove(ini.path);
