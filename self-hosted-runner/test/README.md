@@ -2,10 +2,10 @@
 
 This folder owns the tests executed on the dedicated Linux GitHub runner:
 
-- `run-matrix.sh`: trusted host launcher; selects **eight distinct hardware
-  threads** using Docker `--cpuset-cpus`, sets `--memory 8g --memory-swap 8g`,
+- `run-matrix.sh`: trusted host launcher; selects **sixteen distinct schedulable CPU
+  threads** using Docker `--cpuset-cpus`, sets `--memory 32g --memory-swap 32g`,
   and runs the five OS images sequentially.
-- `run-in-container.sh`: validates OS identity, CPU affinity and 8 GiB memory;
+- `run-in-container.sh`: validates OS identity, CPU affinity and 32 GiB memory;
   installs distro-native C++/MariaDB/Apache test dependencies; compiles the
   C++20 server; runs 15 isolated Stage IV CTest checks; builds React/TypeScript/
   Vite; runs WebAdmin unit tests, Playwright Chromium E2E and live C++ API.
@@ -20,8 +20,8 @@ All network listeners used by the tests remain inside disposable containers.
 ## Expected output
 
 The matrix fails if fewer than 15 required CTest cases are registered, a
-test fails, the container cannot verify exactly eight schedulable threads,
-its RAM ceiling is not 8 GiB, or a CPU-time quota exists. Each distro has a
+test fails, the container cannot verify exactly sixteen schedulable threads,
+its RAM ceiling is not 32 GiB, or a CPU-time quota exists. Each distro has a
 separate `ctest.xml`, `loopback-probes.json`, `ctest-discovery.txt` and a
 `result.txt` produced only when every test passes. Artifacts are retained
 for seven days, without secrets or raw database backups.

@@ -26,10 +26,10 @@ class RunnerPolicy(unittest.TestCase):
         host = self.text("self-hosted-runner/test/run-matrix.sh")
         container = self.text("self-hosted-runner/test/run-in-container.sh")
         self.assertIn('--cpuset-cpus "$cpuset"', host)
-        self.assertIn("--memory 8g --memory-swap 8g", host)
+        self.assertIn("--memory 32g --memory-swap 32g", host)
         self.assertNotIn(" --cpus ", host)
         self.assertNotIn(" --cpu-quota", host)
-        self.assertIn('[[ "$(nproc)" == 8 ]]', container)
+        self.assertIn('[[ "$(nproc)" == 16 ]]', container)
         self.assertIn('[[ "$cpu_quota" == max ]]', container)
         self.assertIn('--mount "type=bind,src=$GITHUB_WORKSPACE,dst=/src,readonly"', host)
         self.assertNotIn('/var/run/docker.sock', host)
@@ -52,7 +52,7 @@ class RunnerPolicy(unittest.TestCase):
 
     def test_all_regular_ci_jobs_use_the_debian_13_runner_and_ubuntu_containers(self):
         runner = "runs-on: [self-hosted, Linux, X64, server-747585786]"
-        limits = "--cpuset-cpus=0-7 --memory=8g --memory-swap=8g"
+        limits = "--cpuset-cpus=0-15 --memory=32g --memory-swap=32g"
         for name, jobs, containers in (
             ("build.yml", 4, 3),
             ("stage4-ubuntu-vm-validation.yml", 1, 1),

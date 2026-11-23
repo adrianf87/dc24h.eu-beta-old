@@ -10,8 +10,8 @@ authorize a release.
 The [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
 workflow runs the same operational suite in disposable Ubuntu **22.04**,
 **24.04** and **26.04** Docker containers on the dedicated Linux x64 runner
-`server-747585786`. Each container has affinity to eight logical CPU threads,
-an 8 GiB memory ceiling, and no CPU-time quota. In each container it:
+`server-747585786`. Each container has affinity to sixteen logical CPU threads,
+a 32 GiB memory ceiling, and no CPU-time quota. In each container it:
 
 1. Installs pinned-in-scope C++20, MariaDB server/client, OpenSSL and Apache2
    dependencies with the existing bounded apt-mirror installer.

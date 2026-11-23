@@ -75,8 +75,8 @@ def main():
             "build.yml: both jobs must list the three Ubuntu container images", errors)
     require(workflow.count("runs-on: [self-hosted, Linux, X64, server-747585786]") == 4,
             "build.yml: every job must use the dedicated self-hosted runner", errors)
-    require(workflow.count("--cpuset-cpus=0-7 --memory=8g --memory-swap=8g") == 3,
-            "build.yml: each test job must use eight CPU threads and 8 GiB RAM in Docker", errors)
+    require(workflow.count("--cpuset-cpus=0-15 --memory=32g --memory-swap=32g") == 3,
+            "build.yml: each test job must use sixteen CPU threads and 32 GiB RAM in Docker", errors)
     require(workflow.count("image: ${{ matrix.image }}") == 2,
             "build.yml: C++ and WebAdmin must select Ubuntu Docker images", errors)
     require('test "$(nproc)" -eq 4' not in workflow,

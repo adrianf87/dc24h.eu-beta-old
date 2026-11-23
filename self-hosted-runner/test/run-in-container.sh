@@ -14,22 +14,22 @@ case "${DISTRO:-}" in
   *) fail 'Unexpected Linux distribution.' ;;
 esac
 
-[[ "$(nproc)" == 8 ]] || fail 'Container does not have exactly eight schedulable threads.'
-limit_bytes=$((8 * 1024 * 1024 * 1024))
+[[ "$(nproc)" == 16 ]] || fail 'Container does not have exactly sixteen schedulable threads.'
+limit_bytes=$((32 * 1024 * 1024 * 1024))
 if [[ -r /sys/fs/cgroup/memory.max ]]; then
   memory_limit="$(< /sys/fs/cgroup/memory.max)"
-  [[ "$memory_limit" == "$limit_bytes" ]] || fail 'The cgroup v2 RAM limit is not 8 GiB.'
+  [[ "$memory_limit" == "$limit_bytes" ]] || fail 'The cgroup v2 RAM limit is not 32 GiB.'
   read -r cpu_quota _ < /sys/fs/cgroup/cpu.max
   [[ "$cpu_quota" == max ]] || fail 'A CPU-time quota is active; affinity alone was requested.'
 elif [[ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]]; then
   memory_limit="$(< /sys/fs/cgroup/memory/memory.limit_in_bytes)"
-  [[ "$memory_limit" == "$limit_bytes" ]] || fail 'The cgroup v1 RAM limit is not 8 GiB.'
+  [[ "$memory_limit" == "$limit_bytes" ]] || fail 'The cgroup v1 RAM limit is not 32 GiB.'
   [[ "$(< /sys/fs/cgroup/cpu/cpu.cfs_quota_us)" == -1 ]] || fail 'A CPU-time quota is active.'
 else
-  fail 'No readable memory cgroup limit; cannot verify the 8 GiB boundary.'
+  fail 'No readable memory cgroup limit; cannot verify the 32 GiB boundary.'
 fi
 [[ "$(node --version)" == v22.* ]] || fail 'Node.js 22 toolchain not mounted.'
-printf 'Verified %s %s: 8 real logical threads, 8 GiB RAM, no CPU-time quota.\n' "$ID" "$VERSION_ID"
+printf 'Verified %s %s: 16 real logical threads, 32 GiB RAM, no CPU-time quota.\n' "$ID" "$VERSION_ID"
 
 export DEBIAN_FRONTEND=noninteractive
 apt_options=(-o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15)

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   isolated-distros:
-    name: Debian 12/13 and Ubuntu 22.04/24.04/26.04 (8 threads, 8 GiB)
+    name: Debian 12/13 and Ubuntu 22.04/24.04/26.04 (16 threads, 32 GiB)
     # Never execute PR code on a runner with passwordless Docker/sudo.
     if: >-
       github.repository == 'adrianf87/dc24h.eu-high-starter' &&

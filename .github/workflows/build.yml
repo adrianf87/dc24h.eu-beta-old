@@ -26,7 +26,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ${{ matrix.image }}
-      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
+      options: --cpuset-cpus=0-15 --memory=32g --memory-swap=32g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -73,7 +73,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ${{ matrix.image }}
-      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
+      options: --cpuset-cpus=0-15 --memory=32g --memory-swap=32g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -148,7 +148,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ubuntu:24.04
-      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
+      options: --cpuset-cpus=0-15 --memory=32g --memory-swap=32g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 90
     strategy:
       fail-fast: false

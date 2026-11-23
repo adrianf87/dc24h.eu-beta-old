@@ -9,7 +9,7 @@ nie wdrażają usług, nie udostępniają WebAdmin i nie zatwierdzają wydania.
 Workflow [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
 uruchamia jednakowy zestaw w kontenerach Docker Ubuntu **22.04**, **24.04** i
 **26.04** na runnerze Linux x64 `server-747585786`. Każdy kontener ma
-osiem logicznych wątków CPU oraz limit 8 GiB RAM, bez limitu czasu CPU.
+szesnaście logicznych wątków CPU oraz limit 32 GiB RAM, bez limitu czasu CPU.
 Każde środowisko:
 
 1. Instaluje narzędzia C++20, MariaDB, OpenSSL i Apache2 za pomocą instalatora

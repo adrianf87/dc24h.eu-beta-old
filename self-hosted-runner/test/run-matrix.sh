@@ -19,16 +19,16 @@ command -v node >/dev/null || fail 'Node 22 must be provisioned by setup-node.'
 node_root="$(dirname "$(dirname "$(readlink -f "$(command -v node)")")")"
 [[ -r "$node_root/bin/npm" ]] || fail 'Node.js npm runtime missing.'
 
-# Select eight distinct online logical CPU IDs. --cpuset-cpus changes scheduler
+# Select sixteen distinct online logical CPU IDs. --cpuset-cpus changes scheduler
 # affinity; --cpus/--cpu-quota would only enforce CPU time and are NOT used.
-mapfile -t logical_threads < <(awk -F: '/^processor[[:space:]]*:/ {gsub(/[[:space:]]/, "", $2); print $2}' /proc/cpuinfo | head -n 8)
-[[ "${#logical_threads[@]}" -eq 8 ]] || fail 'Eight online hardware threads are required.'
-[[ "$(printf '%s\n' "${logical_threads[@]}" | sort -un | wc -l)" -eq 8 ]] || fail 'CPU IDs must be distinct.'
+mapfile -t logical_threads < <(awk -F: '/^processor[[:space:]]*:/ {gsub(/[[:space:]]/, "", $2); print $2}' /proc/cpuinfo | head -n 16)
+[[ "${#logical_threads[@]}" -eq 16 ]] || fail 'Sixteen online hardware threads are required.'
+[[ "$(printf '%s\n' "${logical_threads[@]}" | sort -un | wc -l)" -eq 16 ]] || fail 'CPU IDs must be distinct.'
 cpuset="$(IFS=,; printf '%s' "${logical_threads[*]}")"
 
 report_root="$RUNNER_TEMP/dc24h-container-results/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
 mkdir -p -m 0700 "$report_root"
-printf 'Using eight host logical CPU IDs: %s; 8 GiB per container; no CPU-time quota.\n' "$cpuset"
+printf 'Using sixteen host logical CPU IDs: %s; 32 GiB per container; no CPU-time quota.\n' "$cpuset"
 
 declare -a distros=(debian-12 debian-13 ubuntu-22.04 ubuntu-24.04 ubuntu-26.04)
 declare -a images=(debian:12 debian:13 ubuntu:22.04 ubuntu:24.04 ubuntu:26.04)
@@ -50,7 +50,7 @@ for index in "${!distros[@]}"; do
   printf '\n=== Isolated %s (%s) ===\n' "$distro" "$image"
   if timeout --signal=TERM --kill-after=30s 3600s docker run --rm --init \
     --name "$current_container" --pull always --platform linux/amd64 \
-    --cpuset-cpus "$cpuset" --memory 8g --memory-swap 8g --pids-limit 512 \
+    --cpuset-cpus "$cpuset" --memory 32g --memory-swap 32g --pids-limit 512 \
     --security-opt no-new-privileges --cap-drop NET_RAW --cap-drop SYS_ADMIN \
     --network bridge \
     --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/src,readonly" \

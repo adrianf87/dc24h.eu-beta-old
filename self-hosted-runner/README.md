@@ -10,12 +10,13 @@ in [`test/`](test/README.md). Nothing here deploys dc24h or opens WebAdmin.
 | Runner name and custom label | `server-747585786` |
 | Runner settings ID | [35](https://github.com/adrianf87/dc24h.eu-high-starter/settings/actions/runners/35) |
 | Required GitHub labels | `self-hosted`, `Linux`, `X64`, `server-747585786` |
-| Host OS | Linux x64 (exact distribution not yet verified) |
+| Host OS | Debian 13 Trixie, x86_64 (operator-provided screenfetch) |
 | Service account | Expected `github-runner`; validate before running the manual suite |
-| Container engine | Docker; service-account socket access must be validated on this runner |
+| Container engine | Docker; CI job containers were observed starting, full validation pending |
 | Privileged host access | Not assumed and **not required by these tests** |
-| Hardware requirement | Eight available logical CPU IDs and at least 8 GiB RAM; host hardware is not yet verified |
-| Observed GitHub status on setup | Idle; correct runner labels |
+| Reported hardware | AMD EPYC, 16 logical CPU threads at 3.195 GHz; 64,308 MiB RAM (operator-provided screenfetch) |
+| Test container allocation | 16 logical CPU threads and 32 GiB RAM; limits checked by test scripts when executed |
+| Observed GitHub status on setup | Correct labels; Stage IV job observed running |
 
 Do not place runner registration tokens, SSH keys, database passwords, host
 addresses or production data in this directory, in workflow environment
@@ -29,18 +30,18 @@ Five official Docker OS images run **one at a time**, never in parallel:
 
 | Environment | Docker image | Logical CPU threads | RAM ceiling |
 | --- | --- | ---: | ---: |
-| Debian 12 | `debian:12` | 8 (affinity) | 8 GiB |
-| Debian 13 | `debian:13` | 8 (affinity) | 8 GiB |
-| Ubuntu 22.04 | `ubuntu:22.04` | 8 (affinity) | 8 GiB |
-| Ubuntu 24.04 | `ubuntu:24.04` | 8 (affinity) | 8 GiB |
-| Ubuntu 26.04 | `ubuntu:26.04` | 8 (affinity) | 8 GiB |
+| Debian 12 | `debian:12` | 16 (affinity) | 32 GiB |
+| Debian 13 | `debian:13` | 16 (affinity) | 32 GiB |
+| Ubuntu 22.04 | `ubuntu:22.04` | 16 (affinity) | 32 GiB |
+| Ubuntu 24.04 | `ubuntu:24.04` | 16 (affinity) | 32 GiB |
+| Ubuntu 26.04 | `ubuntu:26.04` | 16 (affinity) | 32 GiB |
 
-The host launcher selects eight distinct logical CPU IDs from `/proc/cpuinfo`
-and passes them to Docker with `--cpuset-cpus`. This reserves **which eight
+The host launcher selects sixteen distinct logical CPU IDs from `/proc/cpuinfo`
+and passes them to Docker with `--cpuset-cpus`. This restricts **which sixteen
 schedulable hardware threads** the process may use; it does **not** reserve
 exclusive CPU ownership. There is no `--cpus`, CFS quota or CPU-time throttling
-configured. Each container must verify an eight-thread process affinity, an
-8 GiB cgroup memory limit and no CPU-time quota before starting tests.
+configured. Each container must verify a sixteen-thread process affinity, a
+32 GiB cgroup memory limit and no CPU-time quota before starting tests.
 
 Each container has its own ephemeral filesystem, private Unix-socket MariaDB,
 loopback Apache/HTTPS and ADC/ADCS listeners, plus Node.js 22 and Chromium.
@@ -56,7 +57,7 @@ The regular [C++/WebAdmin CI](../.github/workflows/build.yml) and
 [Stage IV Ubuntu checks](../.github/workflows/stage4-ubuntu-vm-validation.yml)
 are routed exclusively to this runner. Matrix jobs run inside official
 Ubuntu 22.04, 24.04 or 26.04 **Docker job containers**, with CPU affinity
-restricted to logical CPUs `0-7` and an 8 GiB RAM ceiling. This is CPU
+restricted to logical CPUs `0-15` and a 32 GiB RAM ceiling. This is CPU
 affinity, **not** a CPU-time quota or exclusive thread reservation. The runner
 manages container cleanup; cached images can remain on disk. Build artifacts,
 MariaDB fixtures and browser dependencies remain inside the containers.
@@ -65,8 +66,8 @@ Regular CI retains its `push`, same-repository `pull_request` and manual
 triggers. Each test job is additionally restricted to actor `adrianf87` and
 rejects PR heads from forks. The required check remains named
 `CI (C++ and WebAdmin)` and will fail when its gated test jobs do not run.
-Do not expand these trust gates while the runner account has passwordless
-Docker access and sudo. Jobs are scheduled sequentially by the single runner.
+Do not expand these trust gates while the runner account has Docker access
+(equivalent to root-level authority). Jobs are scheduled sequentially by the single runner.
 
 ## Default-off five-distribution suite
 
