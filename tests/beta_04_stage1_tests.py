@@ -11,8 +11,8 @@ def read(path):
 
 class StageOneGate(unittest.TestCase):
     def test_release_and_hosted_ci(self):
-        self.assertIn('set(DC24H_VERSION "beta-0.4.4")', read("CMakeLists.txt"))
-        self.assertIn('WEBADMIN_VERSION = "beta-0.4.4"', read("webadmin/src/lib/status.ts"))
+        self.assertIn('set(DC24H_VERSION "beta-0.4.6")', read("CMakeLists.txt"))
+        self.assertIn('WEBADMIN_VERSION = "beta-0.4.6"', read("webadmin/src/lib/status.ts"))
         workflow = read(".github/workflows/build.yml")
         for expected in ("beta-0.4.1-0.4.4-stage1", "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04",
                          "ctest --test-dir", "npm audit --omit=dev --audit-level=high",
@@ -42,7 +42,7 @@ class StageOneGate(unittest.TestCase):
                          "auditHealthy", "AUDIT_LOSS", 'app.listen(port, "127.0.0.1"'):
             self.assertIn(expected, main)
         gateway = read("webadmin/server/remote-gateway.ts")
-        self.assertIn('new Set(["challenge", "login", "session", "summary", "logout"])', gateway)
+        self.assertIn('new Set(["challenge", "login", "session", "summary", "logout", "passkey/devices", ...passkeyPost])', gateway)
         self.assertIn('sessions.clear(); challenges.clear();', gateway)
         self.assertIn('options.strictAudit && (!mfaLogged || !loginLogged)', gateway)
         service = read("config/dc24h-remote-gateway.service.example")

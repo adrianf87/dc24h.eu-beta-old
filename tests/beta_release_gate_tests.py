@@ -1,4 +1,4 @@
-"""Non-deploying beta-0.4.4 guardrails, retaining beta-0.3 release history.
+"""Non-deploying beta-0.4.6 guardrails, retaining beta-0.3 release history.
 
 This is a deterministic source review gate, NOT a replacement for hosted CI,
 real HTTPS/service integration, an operational penetration test or sign-off.
@@ -9,7 +9,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "beta-0.4.4"
+VERSION = "beta-0.4.6"
 
 
 def source(path):
@@ -32,9 +32,9 @@ class BetaReleaseGate(unittest.TestCase):
                       "sanitizer: [address, undefined]", "needs: [cpp, webadmin, sanitizers]"):
             self.assertIn(check, workflow)
 
-    def test_local_only_five_routes_no_public_admin_api(self):
+    def test_local_only_fixed_routes_no_public_admin_api(self):
         gateway = source("webadmin/server/remote-gateway.ts")
-        self.assertIn('new Set(["challenge", "login", "session", "summary", "logout"])', gateway)
+        self.assertIn('new Set(["challenge", "login", "session", "summary", "logout", "passkey/devices", ...passkeyPost])', gateway)
         self.assertIn('mfaVerified !== true', gateway)
         self.assertNotIn('"/api/v1/management/configuration/write"', gateway)
         self.assertNotIn('"/api/v1/management/hub/start"', gateway)

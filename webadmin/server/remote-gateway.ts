@@ -7,10 +7,15 @@ import { parseAccess } from "../src/lib/access.ts";
 import { parseManagement } from "../src/lib/management.ts";
 import { parseRemoteSummary } from "../src/lib/status.ts";
 import { isJsonContentType } from "./json-content-type.ts";
+import type { PasskeyCeremonies } from "./remote-webauthn.ts";
+import type { PasskeyStore } from "./remote-passkeys.ts";
 export { isJsonContentType } from "./json-content-type.ts";
 
 type Credentials = { socket: string; token: string };
-export type RemoteEvent = "login_ok" | "login_refused" | "mfa_ok" | "mfa_refused" | "logout" | "session_revoked" | "route_refused" | "api_unavailable";
+export type RemoteEvent = "login_ok" | "login_refused" | "mfa_ok" | "mfa_refused" | "logout" | "session_revoked" | "route_refused" | "api_unavailable" |
+  "passkey_enrolled" | "passkey_enroll_refused" | "passkey_login_ok" | "passkey_login_refused" |
+  "passkey_device_renamed" | "passkey_revoke_intent" | "passkey_revoked" |
+  "passkey_enroll_intent" | "passkey_recovery_intent" | "passkey_recovered";
 export interface RemoteOptions {
   origin: string;
   now?: () => number;
@@ -21,6 +26,8 @@ export interface RemoteOptions {
   auditHealthy?: () => boolean;
   // No login session can be created without an explicitly configured second factor.
   mfaVerify?: (actor: string, code: string, at: number) => boolean;
+  // Only the isolated local gateway passes this pair, never Vite or the public API.
+  passkeys?: { store: PasskeyStore; ceremonies: PasskeyCeremonies };
   // Optional in-process transport override for deterministic, socket-free tests.
   upstream?: typeof upstream;
 }
@@ -34,8 +41,11 @@ type Session = {
   created: number;
   used: number;
   pendingLogouts: number;
+  passkeyEpoch: number;
 };
 type Challenge = { token: string; expires: number };
+type PasskeyPending = { actor: string; session: Session; challenge: string; csrf: string;
+  expires: number; oldKey: string; oldSession?: Session };
 type Budget = { count: number; starts: number };
 
 const prefix = "/remote/v1/";
@@ -45,7 +55,10 @@ const idleTime = 2 * 60_000;
 const absoluteTime = 10 * 60_000;
 const challengeTime = 2 * 60_000;
 const maxBody = 2048;
-const safePath = new Set(["challenge", "login", "session", "summary", "logout"]);
+const maxCeremonyBody = 32768;
+const passkeyPost = new Set(["passkey/login/options", "passkey/login/finish", "passkey/enroll/options",
+  "passkey/enroll/finish", "passkey/device/rename", "passkey/device/revoke"]);
+const safePath = new Set(["challenge", "login", "session", "summary", "logout", "passkey/devices", ...passkeyPost]);
 const object = (data: unknown): Record<string, unknown> => {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid response");
   return data as Record<string, unknown>;
@@ -133,6 +146,8 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
   const callUpstream = options.upstream ?? upstream;
   const sessions = new Map<string, Session>();
   const challenges = new Map<string, Challenge>();
+  const passkeyLogins = new Map<string, PasskeyPending>();
+  const enrollments = new Map<string, { challenge: string; expires: number; session: Session }>();
   const budgets = new Map<string, Budget>();
 
   const log = (event: RemoteEvent): boolean => {
@@ -153,6 +168,8 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       if (value.created + absoluteTime <= now || value.used + idleTime <= now) sessions.delete(id);
     }
     for (const [id, value] of challenges) if (value.expires <= now) challenges.delete(id);
+    for (const [id, value] of passkeyLogins) if (value.expires <= now) passkeyLogins.delete(id);
+    for (const [id, value] of enrollments) if (value.expires <= now) enrollments.delete(id);
     for (const [id, value] of budgets) if (value.starts + 60_000 <= now) budgets.delete(id);
   };
   const limited = (key: string, limit: number, now: number) => {
@@ -184,16 +201,27 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       sessions.delete(id);
       return null;
     }
+    try {
+      if (options.passkeys && session.passkeyEpoch !== options.passkeys.store.epoch(session.actor)) {
+        sessions.delete(id); return null;
+      }
+    } catch { sessions.delete(id); return null; }
     return [id, session];
   };
   const authorized = async (id: string, value: Session, existing = false): Promise<"ok" | "revoked" | "unavailable"> => {
     if (!config) return "unavailable";
     try {
+      if (options.passkeys && value.passkeyEpoch !== options.passkeys.store.epoch(value.actor)) {
+        if (existing) sessions.delete(id);
+        return "revoked";
+      }
       const catalog = parseManagement(await callUpstream(config, "/api/v1/management", "GET", "", value));
       if (catalog.areas[0].allowed && catalog.areas[1].allowed) {
         // A concurrent request may have revoked this session while the API
         // request was in flight. Never restore authority from a late success.
-        return existing && sessions.get(id) !== value ? "revoked" : "ok";
+        if (existing && sessions.get(id) !== value) return "revoked";
+        if (options.passkeys && value.passkeyEpoch !== options.passkeys.store.epoch(value.actor)) return "revoked";
+        return "ok";
       }
       sessions.delete(id);
       log("session_revoked");
@@ -209,10 +237,10 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       return "unavailable";
     }
   };
-  const readBody = async (req: IncomingMessage): Promise<unknown> => {
+  const readBody = async (req: IncomingMessage, limit = maxBody): Promise<unknown> => {
     const length = req.headers["content-length"];
-    if (req.headers["transfer-encoding"] || !/^[1-9]\d{0,3}$/.test(String(length)) ||
-        Number(length) > maxBody || req.headers["content-type"] !== "application/json") throw new Error("bad_body");
+    if (req.headers["transfer-encoding"] || !/^[1-9]\d{0,4}$/.test(String(length)) ||
+        Number(length) > limit || req.headers["content-type"] !== "application/json") throw new Error("bad_body");
     const chunks: Buffer[] = [];
     let size = 0;
     try {
@@ -220,7 +248,7 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
         const chunk = part as Buffer;
         chunks.push(chunk);
         size += chunk.length;
-        if (size > maxBody) throw new Error("bad_body");
+        if (size > limit) throw new Error("bad_body");
       }
       if (size !== Number(length)) throw new Error("bad_body");
       const assembled = Buffer.concat(chunks);
@@ -228,13 +256,29 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       finally { assembled.fill(0); }
     } finally { for (const chunk of chunks) chunk.fill(0); }
   };
+  const provePassword = async (actor: string, proof: string): Promise<Session> => {
+    if (!config) throw Object.assign(new Error("unavailable"), { status: 503 });
+    const form = "actor_id=" + encodeURIComponent(actor) + "&proof=" + encodeURIComponent(proof);
+    const issued = parseAccess(await callUpstream(config, "/api/v1/admin/access", "POST", form));
+    if (issued.actor.id !== actor || !["administrator", "owner"].includes(issued.actor.role))
+      throw Error("identity_refused");
+    const session: Session = {
+      mfaVerified: true, actor, grant: issued.grant, apiSession: issued.session, apiCsrf: issued.csrf,
+      csrf: randomBytes(32).toString("hex"), created: 0, used: 0, pendingLogouts: 0,
+      passkeyEpoch: options.passkeys?.store.epoch(actor) ?? 0,
+    };
+    const check = await authorized("pending", session);
+    if (check !== "ok") throw Object.assign(new Error("authorization_refused"),
+      check === "unavailable" ? { status: 503 } : {});
+    return session;
+  };
   return async (req: IncomingMessage, res: ServerResponse) => {
     const path = req.url ?? "";
     const method = req.method ?? "";
     const now = clock();
     prune(now);
     const name = path.startsWith(prefix) ? path.slice(prefix.length) : "";
-    const post = name === "login" || name === "logout";
+    const post = name === "login" || name === "logout" || passkeyPost.has(name);
     const valid = safePath.has(name) && (post ? method === "POST" : method === "GET");
     // No query strings, normalized paths, wildcard methods or forwarding.
     if (!valid) { log("route_refused"); reply(res, 404, { error: "not_found" }); return; }
@@ -258,7 +302,7 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       catch { auditAvailable = false; }
     }
     if (!auditAvailable) {
-      sessions.clear(); challenges.clear();
+      sessions.clear(); challenges.clear(); passkeyLogins.clear(); enrollments.clear();
       reply(res, 503, { error: "unavailable" }, clearSession()); return;
     }
     if (name === "challenge") {
@@ -299,24 +343,8 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
       }
       if (!config) { reply(res, 503, { error: "unavailable" }); return; }
       try {
-        const form = "actor_id=" + encodeURIComponent(actor) + "&proof=" + encodeURIComponent(proof);
-        const issued = parseAccess(await callUpstream(config, "/api/v1/admin/access", "POST", form));
-        if (issued.actor.id !== actor || !["administrator", "owner"].includes(issued.actor.role)) {
-          throw new Error("identity_refused");
-        }
-        // A subsequent GET rechecks the role against the actual database.
-        const session: Session = {
-          mfaVerified: true, actor, grant: issued.grant, apiSession: issued.session, apiCsrf: issued.csrf,
-          csrf: randomBytes(32).toString("hex"), created: 0, used: 0, pendingLogouts: 0,
-        };
+        const session = await provePassword(actor, proof);
         const key = randomBytes(32).toString("hex");
-        const check = await authorized(key, session);
-        if (check === "unavailable") {
-          const fault = new Error("upstream_unavailable") as Error & { status: number };
-          fault.status = 503;
-          throw fault;
-        }
-        if (check !== "ok") throw new Error("authorization_refused");
         if (!options.mfaVerify) {
           const fault = new Error("mfa_not_configured") as Error & { status: number };
           fault.status = 503;
@@ -364,6 +392,157 @@ export function remoteGateway(config: Credentials | null, options: RemoteOptions
           [setCookie("dc24h_remote_init", "", 0)]);
       }
       return;
+    }
+    if (name.startsWith("passkey/")) {
+      const p = options.passkeys;
+      if (!p || !p.store.healthy()) {
+        sessions.clear(); passkeyLogins.clear(); enrollments.clear();
+        reply(res, 503, { error: "unavailable" }, clearSession()); return;
+      }
+      // Challenge-based password proof is mandatory to obtain a C++ grant.
+      // Passkeys replace TOTP here, not the C++ password authorization boundary.
+      if (name === "passkey/login/options") {
+        const init = cookie(req, "dc24h_remote_init");
+        const initial = challenges.get(init);
+        challenges.delete(init);
+        let fields: Record<string, unknown>;
+        try { fields = object(await readBody(req)); }
+        catch { reply(res, 400, { error: "bad_request" }); return; }
+        const actor = fields.actor_id, proof = fields.password;
+        const csrf = req.headers["x-dc24h-remote-csrf"];
+        if (typeof actor !== "string" || !/^[1-9]\d{0,18}$/.test(actor) ||
+            BigInt(actor) > 9223372036854775807n || typeof proof !== "string" ||
+            !proof || proof.length > 1024 || Object.keys(fields).length !== 2 ||
+            typeof csrf !== "string" || !initial || initial.expires <= clock() ||
+            !sameSecret(initial.token, csrf)) {
+          log("passkey_login_refused"); reply(res, 403, { error: "login_refused" }); return;
+        }
+        if (limited("login:global", 12, now) || limited("login:" + actor, 4, now) || passkeyLogins.size >= 64) {
+          reply(res, 429, { error: "rate_limited" }); return;
+        }
+        try {
+          const previousKey = cookie(req, "dc24h_remote");
+          const prior = sessions.get(previousKey);
+          const session = await provePassword(actor, proof);
+          const opts = await p.ceremonies.beginLogin(actor);
+          if (!opts) { log("passkey_login_refused"); reply(res, 403, { error: "login_refused" }); return; }
+          const token = randomBytes(32).toString("hex");
+          passkeyLogins.set(token, { actor, session, challenge: opts.challenge, csrf: initial.token,
+            expires: clock() + 60_000, oldKey: previousKey, oldSession: prior });
+          reply(res, 200, opts, [setCookie("dc24h_remote_passkey", token, 60), setCookie("dc24h_remote_init", "", 0)]);
+        } catch {
+          log("passkey_login_refused"); reply(res, 403, { error: "login_refused" });
+        }
+        return;
+      }
+      if (name === "passkey/login/finish") {
+        const token = cookie(req, "dc24h_remote_passkey");
+        const pending = passkeyLogins.get(token);
+        passkeyLogins.delete(token); // consume before parsing/awaiting verification
+        const clear = [setCookie("dc24h_remote_passkey", "", 0)];
+        const csrf = req.headers["x-dc24h-remote-csrf"];
+        if (!pending || pending.expires <= clock() || typeof csrf !== "string" || !sameSecret(pending.csrf, csrf)) {
+          log("passkey_login_refused"); reply(res, 403, { error: "login_refused" }, clear); return;
+        }
+        try {
+          const fields = object(await readBody(req, maxCeremonyBody));
+          if (Object.keys(fields).length !== 1 || !fields.response || typeof fields.response !== "object") throw Error();
+          const verified = await p.ceremonies.finishLogin(pending.actor, pending.challenge,
+            fields.response as Parameters<PasskeyCeremonies["finishLogin"]>[2], clock());
+          if (!verified || (pending.oldSession &&
+              (sessions.get(pending.oldKey) !== pending.oldSession || pending.oldSession.pendingLogouts > 0))) throw Error();
+          const key = randomBytes(32).toString("hex");
+          if (await authorized(key, pending.session) !== "ok" ||
+              pending.session.passkeyEpoch !== p.store.epoch(pending.actor)) throw Error();
+          pending.session.created = clock(); pending.session.used = pending.session.created;
+          if (pending.oldSession) sessions.delete(pending.oldKey);
+          if (sessions.size >= maxSessions) sessions.delete(sessions.keys().next().value!);
+          sessions.set(key, pending.session);
+          if (!log("passkey_login_ok") || !log("login_ok")) {
+            if (options.strictAudit) throw Error("audit_unavailable");
+          }
+          reply(res, 200, { schema: 1, authenticated: true, mfa: true, mode: "read-only",
+            csrf: pending.session.csrf, expires_in: 600 },
+            [setCookie("dc24h_remote", key, 600), ...clear]);
+        } catch {
+          // If a post-verification audit failed, revoke the newly-created
+          // slot rather than leave a live cookie with unlogged authority.
+          for (const [id, s] of sessions) if (s === pending.session) sessions.delete(id);
+          log("passkey_login_refused"); reply(res, 403, { error: "login_refused" }, clear);
+        }
+        return;
+      }
+      const entry = active(req, clock());
+      if (!entry) { reply(res, 401, { error: "unauthorized" }, clearSession()); return; }
+      const [key, session] = entry;
+      const checked = await authorized(key, session, true);
+      if (checked !== "ok" || sessions.get(key) !== session || expired(session, clock())) {
+        reply(res, checked === "unavailable" ? 503 : 403, { error: checked === "unavailable" ? "unavailable" : "forbidden" }); return;
+      }
+      if (name === "passkey/devices") {
+        reply(res, 200, { schema: 1, devices: p.store.forActor(session.actor).map(c => ({
+          id: c.id, name: c.name, device_type: c.deviceType, backed_up: c.backedUp,
+          created_at: c.createdAt, last_used_at: c.lastUsedAt,
+        })) }); return;
+      }
+      const csrf = req.headers["x-dc24h-remote-csrf"];
+      if (typeof csrf !== "string" || !sameSecret(session.csrf, csrf)) {
+        reply(res, 403, { error: "csrf_required" }); return;
+      }
+      // Every credential mutation requires a freshly authenticated browser
+      // session. No password-only bypass and no cross-account device ID.
+      if (clock() - session.created > 60_000) {
+        reply(res, 403, { error: "fresh_login_required" }); return;
+      }
+      if (name === "passkey/enroll/options") {
+        try {
+          const fields = object(await readBody(req));
+          if (Object.keys(fields).length || enrollments.size >= 64 ||
+              limited("passkey:enroll:" + session.actor, 5, now)) throw Error();
+          const opts = await p.ceremonies.beginEnrollment(session.actor);
+          enrollments.set(key, { challenge: opts.challenge, expires: clock() + 60_000, session });
+          reply(res, 200, opts);
+        } catch { log("passkey_enroll_refused"); reply(res, 403, { error: "enrollment_refused" }); }
+        return;
+      }
+      if (name === "passkey/enroll/finish") {
+        const pending = enrollments.get(key);
+        enrollments.delete(key); // one use, including invalid payloads
+        try {
+          if (!pending || pending.session !== session || pending.expires <= clock()) throw Error();
+          const fields = object(await readBody(req, maxCeremonyBody));
+          if (Object.keys(fields).length !== 1 || !fields.response || typeof fields.response !== "object") throw Error();
+          if (options.strictAudit && !log("passkey_enroll_intent")) throw Error("audit_unavailable");
+          const result = await p.ceremonies.finishEnrollment(session.actor, pending.challenge,
+            fields.response as Parameters<PasskeyCeremonies["finishEnrollment"]>[2], clock(),
+            async () => sessions.get(key) === session && !expired(session, clock()) &&
+              await authorized(key, session, true) === "ok");
+          if (!result || sessions.get(key) !== session || expired(session, clock())) throw Error();
+          if (!log("passkey_enrolled") && options.strictAudit) throw Error("audit_unavailable");
+          reply(res, 200, { schema: 1, enrolled: true });
+        } catch { log("passkey_enroll_refused"); reply(res, 403, { error: "enrollment_refused" }); }
+        return;
+      }
+      if (name === "passkey/device/rename" || name === "passkey/device/revoke") {
+        try {
+          const fields = object(await readBody(req));
+          if (limited("passkey:device:" + session.actor, 10, now)) throw Error();
+          if (typeof fields.id !== "string" ||
+              Object.keys(fields).length !== (name.endsWith("rename") ? 2 : 1)) throw Error();
+          if (name.endsWith("rename")) {
+            if (typeof fields.name !== "string" || !p.store.rename(session.actor, fields.id, fields.name)) throw Error();
+            if (!log("passkey_device_renamed") && options.strictAudit) throw Error();
+            reply(res, 200, { schema: 1, renamed: true });
+          } else {
+            if (!p.store.get(session.actor, fields.id) || (options.strictAudit && !log("passkey_revoke_intent"))) throw Error();
+            if (!p.store.revoke(session.actor, fields.id, clock())) throw Error();
+            for (const [id, s] of sessions) if (s.actor === session.actor) sessions.delete(id);
+            if (!log("passkey_revoked") && options.strictAudit) throw Error();
+            reply(res, 200, { schema: 1, revoked: true }, clearSession());
+          }
+        } catch { reply(res, 403, { error: "device_refused" }); }
+        return;
+      }
     }
     const entry = active(req, now);
     if (!entry) { reply(res, 401, { error: "unauthorized" }, clearSession()); return; }

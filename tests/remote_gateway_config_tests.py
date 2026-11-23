@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remote beta-0.4.4 gateway invariants, including HTTPS and systemd sandbox."""
+"""Remote beta-0.4.6 gateway invariants, including HTTPS and systemd sandbox."""
 from pathlib import Path
 import unittest
 
@@ -35,7 +35,10 @@ class RemoteConfiguration(unittest.TestCase):
         self.assertIn("RewriteCond %{HTTP:Content-Length} !^[0-9]{1,4}$", config)
         self.assertIn("RewriteCond %{HTTP:Transfer-Encoding} !^$", config)
         self.assertIn("RewriteCond %{HTTP:Content-Length} !^(?:0)?$", config)
-        self.assertIn("RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary)$", config)
+        self.assertIn("RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary|passkey/devices)$", config)
+        self.assertIn("LimitRequestBody 32768", config)
+        self.assertIn("RewriteCond %{HTTP:Content-Length} -gt32768", config)
+        self.assertIn("passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke))", config)
         self.assertIn('<Files "index.html">', config)
         self.assertIn('^local-[A-Za-z0-9_-]+', config)
         self.assertIn("ProxyPassMatch", config)
@@ -104,6 +107,8 @@ class RemoteConfiguration(unittest.TestCase):
         self.assertIn("credentials(process.env)", executable)
         self.assertIn("loadTotpVerifier", executable)
         self.assertIn("mfaVerify: mfa.verify", executable)
+        self.assertIn("DC24H_REMOTE_PASSKEY_FILE", executable)
+        self.assertIn("DC24H_REMOTE_RP_ID", executable)
         verifier = self.text("webadmin/server/remote-mfa.ts")
         for expected in ("timingSafeEqual", "O_NOFOLLOW", "fsyncSync", "lastUsed", "0o600", "ledgerLimit"):
             self.assertIn(expected, verifier)
@@ -119,8 +124,8 @@ class RemoteConfiguration(unittest.TestCase):
         self.assertNotIn("sessionStorage", ui)
         self.assertNotIn("Start/Stop/Restart", ui)
         self.assertIn('remote.html', self.text("webadmin/vite.config.ts"))
-        self.assertIn('set(DC24H_VERSION "beta-0.4.4")', self.text("CMakeLists.txt"))
-        self.assertIn('WEBADMIN_VERSION = "beta-0.4.4"', self.text("webadmin/src/lib/status.ts"))
+        self.assertIn('set(DC24H_VERSION "beta-0.4.6")', self.text("CMakeLists.txt"))
+        self.assertIn('WEBADMIN_VERSION = "beta-0.4.6"', self.text("webadmin/src/lib/status.ts"))
         self.assertIn("beta-0.2-code", self.text(".github/workflows/build.yml"))
         self.assertIn("beta-0.2.2-fix", self.text(".github/workflows/build.yml"))
         self.assertIn("beta-0.2.2-source", self.text(".github/workflows/build.yml"))

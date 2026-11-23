@@ -3,7 +3,7 @@ import { test, expect, type Route } from "@playwright/test";
 const sessionCsrf = "d".repeat(64);
 const snapshot = {
   schema: 1, mode: "read-only",
-  server: { version: "beta-0.4.4", running: true, uptime_seconds: 123 },
+  server: { version: "beta-0.4.6", running: true, uptime_seconds: 123 },
   network: { active_connections: 5, accepted_connections: 22 },
   users: { online: 4, peak_online: 7 },
   chat: { received: 10, rejected: 1 },
@@ -46,7 +46,7 @@ test("remote read-only screen needs a session, supports EN/PL and never offers m
   await page.getByLabel("Hasło konta").fill("example-proof");
   await page.getByLabel("Kod uwierzytelniający (6 cyfr)").fill("123456");
   await page.getByRole("button", { name: "Zaloguj" }).click();
-  await expect(page.getByText("beta-0.4.4")).toBeVisible();
+  await expect(page.getByText("beta-0.4.6")).toBeVisible();
   await expect(page.getByText("Aktywne połączenia")).toBeVisible();
   await expect(page.getByText("Użytkownicy online")).toBeVisible();
   for (const title of ["Start", "Stop", "Restart", "Edit", "Restore", "Grant"]) {

@@ -43,28 +43,36 @@ TraceEnable Off
     RewriteCond %{REQUEST_URI} ^/remote/v1/
     RewriteCond %{QUERY_STRING} !^$
     RewriteRule ^ - [F,END]
-    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary)$
+    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary|passkey/devices)$
     RewriteCond %{REQUEST_METHOD} !^GET$
     RewriteRule ^ - [F,END]
     # GET endpoints are bodyless. Do not forward a framed/streamed GET body
     # even though mod_proxy would accept the otherwise allowlisted URL.
-    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary)$
+    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary|passkey/devices)$
     RewriteCond %{HTTP:Transfer-Encoding} !^$
     RewriteRule ^ - [F,END]
-    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary)$
+    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:challenge|session|summary|passkey/devices)$
     RewriteCond %{HTTP:Content-Length} !^(?:0)?$
     RewriteRule ^ - [F,END]
-    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout)$
+    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout|passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke)))$
     RewriteCond %{REQUEST_METHOD} !^POST$
     RewriteRule ^ - [F,END]
     # mod_proxy can stream the request without applying LimitRequestBody.
     # Enforce the POST framing/size limit while the original browser headers
     # are still available at the TLS boundary, before invoking the backend.
-    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout)$
+    RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout|passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke)))$
     RewriteCond %{HTTP:Transfer-Encoding} !^$
     RewriteRule ^ - [F,END]
     RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout)$
     RewriteCond %{HTTP:Content-Length} !^[0-9]{1,4}$
+    RewriteRule ^ - [F,END]
+    # Passkey WebAuthn responses contain bounded binary objects encoded as
+    # JSON; this is a separate 32 KiB exception, not a general upload route.
+    RewriteCond %{REQUEST_URI} ^/remote/v1/passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke))$
+    RewriteCond %{HTTP:Content-Length} !^[0-9]{1,5}$
+    RewriteRule ^ - [F,END]
+    RewriteCond %{REQUEST_URI} ^/remote/v1/passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke))$
+    RewriteCond %{HTTP:Content-Length} -gt32768
     RewriteRule ^ - [F,END]
     RewriteCond %{REQUEST_URI} ^/remote/v1/(?:login|logout)$
     RewriteCond %{HTTP:Content-Length} -gt2048
@@ -118,11 +126,15 @@ TraceEnable Off
 
     # Exact read-only gateway routes. Never proxy /admin-api, /api, /management
     # or any wildcard into the existing local WebAdmin adapter.
-    ProxyPassMatch "^(/remote/v1/(?:challenge|login|session|summary|logout))$" "http://127.0.0.1:4182$1"
+    ProxyPassMatch "^(/remote/v1/(?:challenge|login|session|summary|logout|passkey/devices|passkey/(?:login/(?:options|finish)|enroll/(?:options|finish)|device/(?:rename|revoke))))$" "http://127.0.0.1:4182$1"
     ProxyPassReverse "/remote/v1/" "http://127.0.0.1:4182/remote/v1/"
     <LocationMatch "^/remote/v1/">
         Require local
         Header always set Cache-Control "no-store"
+    </LocationMatch>
+    <LocationMatch "^/remote/v1/passkey/">
+        Require local
+        LimitRequestBody 32768
     </LocationMatch>
     <LocationMatch "^/(?:admin-api|api|management)(?:/|$)">
         Require all denied

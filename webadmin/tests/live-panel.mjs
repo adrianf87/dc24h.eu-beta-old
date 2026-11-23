@@ -22,7 +22,7 @@ try {
   });
   await page.goto(process.argv[2]);
   await expect(page.getByText("API connected", { exact: true })).toBeVisible();
-  await expect(page.getByText("beta-0.4.4", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("beta-0.4.6", { exact: true })).toHaveCount(2);
   await expect(page.locator(".metric-value").nth(1)).toHaveText("16");
   assert.ok(
     Number(await page.locator(".metric-value").first().textContent()) >= 2,
