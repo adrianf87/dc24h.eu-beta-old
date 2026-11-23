@@ -1,4 +1,4 @@
-"""Non-deploying beta-0.4.6 guardrails, retaining beta-0.3 release history.
+"""Non-deploying beta-0.4.7 guardrails, retaining beta-0.3 release history.
 
 This is a deterministic source review gate, NOT a replacement for hosted CI,
 real HTTPS/service integration, an operational penetration test or sign-off.
@@ -9,7 +9,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "beta-0.4.6"
+VERSION = "beta-0.4.7"
 
 
 def source(path):

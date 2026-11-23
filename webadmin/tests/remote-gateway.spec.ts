@@ -3,7 +3,7 @@ import { test, expect, type Route } from "@playwright/test";
 const sessionCsrf = "d".repeat(64);
 const snapshot = {
   schema: 1, mode: "read-only",
-  server: { version: "beta-0.4.6", running: true, uptime_seconds: 123 },
+  server: { version: "beta-0.4.7", running: true, uptime_seconds: 123 },
   network: { active_connections: 5, accepted_connections: 22 },
   users: { online: 4, peak_online: 7 },
   chat: { received: 10, rejected: 1 },
@@ -46,7 +46,7 @@ test("remote read-only screen needs a session, supports EN/PL and never offers m
   await page.getByLabel("Hasło konta").fill("example-proof");
   await page.getByLabel("Kod uwierzytelniający (6 cyfr)").fill("123456");
   await page.getByRole("button", { name: "Zaloguj" }).click();
-  await expect(page.getByText("beta-0.4.6")).toBeVisible();
+  await expect(page.getByText("beta-0.4.7")).toBeVisible();
   await expect(page.getByText("Aktywne połączenia")).toBeVisible();
   await expect(page.getByText("Użytkownicy online")).toBeVisible();
   for (const title of ["Start", "Stop", "Restart", "Edit", "Restore", "Grant"]) {
@@ -54,6 +54,48 @@ test("remote read-only screen needs a session, supports EN/PL and never offers m
   }
   await page.getByRole("button", { name: "Wyloguj" }).click();
   await expect(page.getByText("Zaloguj się, aby odczytać zatwierdzone dane huba.")).toBeVisible();
+});
+
+test("local passkey inventory exposes only this account's device actions and revokes the browser session", async ({ page }) => {
+  let revoked = false;
+  let name = "My phone";
+  await page.route("**/remote/v1/session", route => route.fulfill({
+    status: revoked ? 401 : 200, contentType: "application/json",
+    body: revoked ? '{"error":"unauthorized"}' : JSON.stringify({
+      schema: 1, authenticated: true, mfa: true, mode: "read-only", csrf: sessionCsrf, expires_in: 600,
+    }),
+  }));
+  await page.route("**/remote/v1/summary", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify(snapshot),
+  }));
+  await page.route("**/remote/v1/passkey/devices", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ schema: 1, devices: [{
+      id: "p".repeat(32), name, device_type: "multiDevice", backed_up: true,
+      created_at: 1000, last_used_at: null,
+    }] }),
+  }));
+  await page.route("**/remote/v1/passkey/device/rename", async route => {
+    expect(route.request().headers()["x-dc24h-remote-csrf"]).toBe(sessionCsrf);
+    const body = route.request().postDataJSON() as { id: string; name: string };
+    expect(body.id).toBe("p".repeat(32));
+    name = body.name;
+    await route.fulfill({ status: 200, contentType: "application/json", body: '{"schema":1,"renamed":true}' });
+  });
+  await page.route("**/remote/v1/passkey/device/revoke", async route => {
+    expect(route.request().headers()["x-dc24h-remote-csrf"]).toBe(sessionCsrf);
+    revoked = true;
+    await route.fulfill({ status: 200, contentType: "application/json", body: '{"schema":1,"revoked":true}' });
+  });
+  await page.goto("/remote.html");
+  await expect(page.getByText("Passkeys / trusted devices")).toBeVisible();
+  await page.getByRole("button", { name: "Refresh devices" }).click();
+  await expect(page.getByText("My phone")).toBeVisible();
+  await page.getByLabel("Device name").fill("Work laptop");
+  await page.getByRole("button", { name: "Rename" }).click();
+  await expect(page.getByText("Work laptop")).toBeVisible();
+  await page.getByRole("button", { name: "Revoke" }).click();
+  await expect(page.getByText("Sign in to read approved hub metrics.")).toBeVisible();
+  await expect(page.getByText("The key was revoked and sessions were ended.")).toBeVisible();
 });
 
 test("remote view fails closed on unavailable API and does not render stale metrics", async ({ page }) => {

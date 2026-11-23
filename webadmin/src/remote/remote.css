@@ -12,4 +12,7 @@ input{font:inherit;color:#fff;background:#101c2e;border:1px solid #536986;border
 .remote-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 .remote-grid>div{padding:18px;background:#111e31;border:1px solid #2e4564;border-radius:12px}
 .remote-grid dt{color:#b5c8e6}.remote-grid dd{font-size:1.45rem;font-weight:700;margin:8px 0 0;overflow-wrap:anywhere}
+.remote-devices{margin-top:24px;border-top:1px solid #2f4666;padding-top:20px}.remote-devices h2{font-size:1.2rem}
+.remote-devices ul{list-style:none;padding:0;display:grid;gap:14px}.remote-devices li{display:grid;gap:10px;border:1px solid #2f4666;padding:14px;border-radius:10px}
+.remote-devices label{max-width:350px}.remote-devices .remote-actions{margin-top:10px}
 @media(max-width:580px){.remote-head{align-items:flex-start;flex-direction:column}.remote-shell{padding:16px}}
