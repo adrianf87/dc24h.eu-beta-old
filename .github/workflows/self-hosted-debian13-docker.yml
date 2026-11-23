@@ -1,4 +1,4 @@
-name: Self-hosted Debian 13 - isolated five-distro Docker validation
+name: Self-hosted Linux - isolated five-distro Docker validation
 
 # No push or PR trigger: this high-trust runner is manual-only and defaults OFF.
 on:
@@ -25,7 +25,7 @@ jobs:
       github.actor == 'adrianf87' &&
       github.event_name == 'workflow_dispatch' &&
       inputs.confirm_run == 'RUN-FIVE-DISTROS'
-    runs-on: [self-hosted, Linux, X64, server-759505093]
+    runs-on: [self-hosted, Linux, X64, server-747585786]
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

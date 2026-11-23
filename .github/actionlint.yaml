@@ -1,4 +1,4 @@
 self-hosted-runner:
-  # Dedicated Debian 13 runner, executing Ubuntu matrix jobs in Docker.
+  # Dedicated Linux x64 runner, executing Ubuntu matrix jobs in Docker.
   labels:
-    - server-759505093
+    - server-747585786

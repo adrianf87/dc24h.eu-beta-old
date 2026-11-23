@@ -1,6 +1,6 @@
 # Five-distribution self-hosted validation
 
-This folder owns the tests executed on the dedicated Debian 13 GitHub runner:
+This folder owns the tests executed on the dedicated Linux GitHub runner:
 
 - `run-matrix.sh`: trusted host launcher; selects **eight distinct hardware
   threads** using Docker `--cpuset-cpus`, sets `--memory 8g --memory-swap 8g`,

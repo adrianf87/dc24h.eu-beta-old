@@ -8,7 +8,7 @@ nie wdrażają usług, nie udostępniają WebAdmin i nie zatwierdzają wydania.
 
 Workflow [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
 uruchamia jednakowy zestaw w kontenerach Docker Ubuntu **22.04**, **24.04** i
-**26.04** na runnerze Debian 13 `server-759505093`. Każdy kontener ma
+**26.04** na runnerze Linux x64 `server-747585786`. Każdy kontener ma
 osiem logicznych wątków CPU oraz limit 8 GiB RAM, bez limitu czasu CPU.
 Każde środowisko:
 
@@ -38,7 +38,7 @@ nieuruchomiony nie jest zaliczony. Workflow sam niczego nie scala ani nie wdraż
 Pomiar ADC/ADCS (12 połączeń przy 4/s) jest testem kontrolnym, **nie** testem
 wydajności docelowego procesora Intel Xeon D-1521 i 31 997 MiB RAM.
 
-Wyniki kontenerów Ubuntu na hoście Debian 13 **nie zastępują** pomiarów
+Wyniki kontenerów Ubuntu na własnym hoście Linux **nie zastępują** pomiarów
 rzeczywiście uruchomionych usług docelowych,
 odtwarzania produkcyjnej kopii MariaDB z potwierdzonym RPO/RTO, niezależnego
 audytu bezpieczeństwa ani ręcznej zgody na wydanie. Niezamknięte wymagania

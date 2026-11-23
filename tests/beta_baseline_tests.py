@@ -26,7 +26,7 @@ def check_no_stale_runner_refs(errors):
     needles = (
         "contabo",
         "hetzner",
-        "747585786",
+        "759505093",
         "proxmox",
         "ci-controller",
     )
@@ -40,9 +40,9 @@ def check_no_stale_runner_refs(errors):
             require(needle.casefold() not in folded,
                     f"{relative}: custom worker term {needle!r}", errors)
     actionlint = (ROOT / ".github" / "actionlint.yaml").read_text(encoding="utf-8")
-    require("server-747585786" not in actionlint,
-            "actionlint.yaml: custom runner label remains", errors)
-    require("server-759505093" in actionlint,
+    require("server-759505093" not in actionlint,
+            "actionlint.yaml: retired runner label remains", errors)
+    require("server-747585786" in actionlint,
             "actionlint.yaml: current self-hosted runner label is missing", errors)
 
 
@@ -59,7 +59,7 @@ def main():
     check(ROOT / "cmake/version.hpp.in", ('inline constexpr std::string_view version = "@DC24H_VERSION@";',), errors)
     workflow = check(ROOT / ".github/workflows/build.yml", (
         "os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]",
-        "runs-on: [self-hosted, Linux, X64, server-759505093]",
+        "runs-on: [self-hosted, Linux, X64, server-747585786]",
         'beta-0.3.1-12-full',
         'sanitizer: [address, undefined]',
         'npm audit --omit=dev --audit-level=high',
@@ -73,7 +73,7 @@ def main():
     ), errors)
     require(workflow.count("os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]") == 2,
             "build.yml: both jobs must list the three Ubuntu container images", errors)
-    require(workflow.count("runs-on: [self-hosted, Linux, X64, server-759505093]") == 4,
+    require(workflow.count("runs-on: [self-hosted, Linux, X64, server-747585786]") == 4,
             "build.yml: every job must use the dedicated self-hosted runner", errors)
     require(workflow.count("--cpuset-cpus=0-7 --memory=8g --memory-swap=8g") == 3,
             "build.yml: each test job must use eight CPU threads and 8 GiB RAM in Docker", errors)
@@ -85,7 +85,7 @@ def main():
             "build.yml: High Starter repository must run C++, WebAdmin and sanitizers", errors)
     require("needs: [cpp, webadmin, sanitizers]" in workflow,
             "build.yml: sanitizer failures must block the required CI result", errors)
-    require("server-747585786" not in workflow, "build.yml: stale runner is selected", errors)
+    require("server-759505093" not in workflow, "build.yml: retired runner is selected", errors)
     require("runs-on: ubuntu-" not in workflow, "build.yml: GitHub-hosted runner remains", errors)
     require("ubuntu-latest" not in workflow, "build.yml: ubuntu-latest is selected", errors)
     check(ROOT / "README.md", (

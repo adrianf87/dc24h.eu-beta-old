@@ -16,7 +16,7 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("default: 'DISABLED'", workflow)
         self.assertIn("inputs.confirm_run == 'RUN-FIVE-DISTROS'", workflow)
         self.assertIn("github.actor == 'adrianf87'", workflow)
-        self.assertIn("runs-on: [self-hosted, Linux, X64, server-759505093]", workflow)
+        self.assertIn("runs-on: [self-hosted, Linux, X64, server-747585786]", workflow)
         self.assertIn("persist-credentials: false", workflow)
         self.assertNotIn("  push:\n", workflow)
         self.assertNotIn("pull_request:", workflow)
@@ -51,7 +51,7 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("test:integration", container)
 
     def test_all_regular_ci_jobs_use_the_debian_13_runner_and_ubuntu_containers(self):
-        runner = "runs-on: [self-hosted, Linux, X64, server-759505093]"
+        runner = "runs-on: [self-hosted, Linux, X64, server-747585786]"
         limits = "--cpuset-cpus=0-7 --memory=8g --memory-swap=8g"
         for name, jobs, containers in (
             ("build.yml", 4, 3),

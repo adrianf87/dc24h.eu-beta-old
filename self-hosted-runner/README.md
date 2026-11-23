@@ -1,20 +1,20 @@
-# Self-hosted GitHub runner (Debian 13)
+# Self-hosted GitHub runner (Linux x64)
 
 The repository is private. This directory contains **non-secret** operator
-documentation for a dedicated GitHub Actions self-hosted runner and the tests
+documentation for the current GitHub Actions self-hosted runner and the tests
 in [`test/`](test/README.md). Nothing here deploys dc24h or opens WebAdmin.
 
 | Field | Value |
 | --- | --- |
 | Repository | `adrianf87/dc24h.eu-high-starter` |
-| Runner name and custom label | `server-759505093` |
-| Runner settings ID | [34](https://github.com/adrianf87/dc24h.eu-high-starter/settings/actions/runners/34) |
-| Required GitHub labels | `self-hosted`, `Linux`, `X64`, `server-759505093` |
-| Host OS | Debian 13 Trixie (operator-provided) |
-| Service account | `github-runner` (operator-provided) |
-| Container engine | Docker (passwordless for the service account) |
-| Privileged host access | Passwordless `sudo` (operator-provided; **not used by these tests**) |
-| Declared hardware | Intel Xeon D-1521, 8 logical threads, 31,997 MiB RAM |
+| Runner name and custom label | `server-747585786` |
+| Runner settings ID | [35](https://github.com/adrianf87/dc24h.eu-high-starter/settings/actions/runners/35) |
+| Required GitHub labels | `self-hosted`, `Linux`, `X64`, `server-747585786` |
+| Host OS | Linux x64 (exact distribution not yet verified) |
+| Service account | Expected `github-runner`; validate before running the manual suite |
+| Container engine | Docker; service-account socket access must be validated on this runner |
+| Privileged host access | Not assumed and **not required by these tests** |
+| Hardware requirement | Eight available logical CPU IDs and at least 8 GiB RAM; host hardware is not yet verified |
 | Observed GitHub status on setup | Idle; correct runner labels |
 
 Do not place runner registration tokens, SSH keys, database passwords, host

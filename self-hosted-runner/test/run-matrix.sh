@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Run five disposable distro containers sequentially on the named Debian 13 runner.
+# Run five disposable distro containers sequentially on the named Linux runner.
 set -Eeuo pipefail
 
 fail() { printf 'Self-hosted matrix: %s\n' "$*" >&2; exit 1; }
 
 [[ "${GITHUB_ACTIONS:-}" == true ]] || fail 'Only GitHub Actions may invoke the host matrix.'
-[[ "${RUNNER_NAME:-}" == server-759505093 ]] || fail 'Unexpected runner identity.'
+[[ "${RUNNER_NAME:-}" == server-747585786 ]] || fail 'Unexpected runner identity.'
 [[ "$(id -un)" == github-runner ]] || fail 'Expected the github-runner service account.'
 [[ "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || fail 'Invalid workflow run ID.'
 [[ "${GITHUB_RUN_ATTEMPT:-}" =~ ^[0-9]+$ ]] || fail 'Invalid workflow attempt.'

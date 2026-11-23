@@ -5,12 +5,12 @@ The original test branch was `test/stage4-ubuntu-vm-validation`, based on
 in the repository; they do not deploy services, enable public WebAdmin or
 authorize a release.
 
-## Debian 13 self-hosted runner and Ubuntu containers
+## Linux self-hosted runner and Ubuntu containers
 
 The [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
 workflow runs the same operational suite in disposable Ubuntu **22.04**,
-**24.04** and **26.04** Docker containers on the dedicated Debian 13 runner
-`server-759505093`. Each container has affinity to eight logical CPU threads,
+**24.04** and **26.04** Docker containers on the dedicated Linux x64 runner
+`server-747585786`. Each container has affinity to eight logical CPU threads,
 an 8 GiB memory ceiling, and no CPU-time quota. In each container it:
 
 1. Installs pinned-in-scope C++20, MariaDB server/client, OpenSSL and Apache2
@@ -53,7 +53,7 @@ about the target Intel Xeon D-1521 with 31,997 MiB RAM.
 
 ### Evidence boundary and remaining gates
 
-- Ubuntu container results on the Debian 13 host are **not** measurements of
+- Ubuntu container results on the self-hosted Linux runner are **not** measurements of
   deployed production services and do not establish Debian 12/13 deployment
   compatibility. The separate manual five-distribution Docker suite covers
   additional Debian 12/13 container-level validation.

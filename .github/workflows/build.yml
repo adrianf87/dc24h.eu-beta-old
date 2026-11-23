@@ -23,7 +23,7 @@ jobs:
       github.repository == 'adrianf87/dc24h.eu-high-starter' &&
       github.actor == 'adrianf87' &&
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, Linux, X64, server-759505093]
+    runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ${{ matrix.image }}
       options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
@@ -70,7 +70,7 @@ jobs:
       github.repository == 'adrianf87/dc24h.eu-high-starter' &&
       github.actor == 'adrianf87' &&
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, Linux, X64, server-759505093]
+    runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ${{ matrix.image }}
       options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
@@ -145,7 +145,7 @@ jobs:
       github.repository == 'adrianf87/dc24h.eu-high-starter' &&
       github.actor == 'adrianf87' &&
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, Linux, X64, server-759505093]
+    runs-on: [self-hosted, Linux, X64, server-747585786]
     container:
       image: ubuntu:24.04
       options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
@@ -182,7 +182,7 @@ jobs:
     name: CI (C++ and WebAdmin)
     needs: [cpp, webadmin, sanitizers]
     if: ${{ !cancelled() }}
-    runs-on: [self-hosted, Linux, X64, server-759505093]
+    runs-on: [self-hosted, Linux, X64, server-747585786]
     timeout-minutes: 5
     steps:
       - name: Ensure all C++ and WebAdmin checks passed
