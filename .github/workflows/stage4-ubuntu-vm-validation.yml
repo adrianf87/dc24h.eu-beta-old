@@ -1,4 +1,4 @@
-name: Stage IV isolated Ubuntu VM validation
+name: Stage IV isolated Ubuntu Docker validation
 
 on:
   push:
@@ -16,14 +16,27 @@ concurrency:
 
 jobs:
   ubuntu-operational:
-    name: Stage IV VM - ${{ matrix.os }}
-    if: github.repository == 'adrianf87/dc24h.eu-high-starter'
-    runs-on: ${{ matrix.os }}
+    name: Stage IV Docker - ${{ matrix.os }}
+    if: >-
+      github.repository == 'adrianf87/dc24h.eu-high-starter' &&
+      github.actor == 'adrianf87' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, server-759505093]
+    container:
+      image: ${{ matrix.image }}
+      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        include:
+          - os: ubuntu-22.04
+            image: ubuntu:22.04
+          - os: ubuntu-24.04
+            image: ubuntu:24.04
+          - os: ubuntu-26.04
+            image: ubuntu:26.04
     env:
       CI: 'true'
       CXX: g++
@@ -42,7 +55,7 @@ jobs:
         run: cmake -S . -B build/Stage4VM -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDC24H_REQUIRE_INTEGRATION_TESTS=ON
 
       - name: Compile server and integration tests
-        run: cmake --build build/Stage4VM --parallel "$(nproc)"
+        run: cmake --build build/Stage4VM --parallel 4
 
       - name: Exercise disposable MariaDB, private HTTPS, API and ADC/ADCS
         run: |
@@ -82,7 +95,7 @@ jobs:
           node --import tsx --test --test-concurrency=2 tests/*.test.ts
           npm run test:integration -- ../build/Stage4VM/dc24h
 
-      - name: Preserve isolated VM metrics and CTest results
+      - name: Preserve isolated Docker metrics and CTest results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

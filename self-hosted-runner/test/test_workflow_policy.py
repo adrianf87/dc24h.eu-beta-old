@@ -1,4 +1,4 @@
-"""Offline contract: privileged self-hosted jobs must remain opt-in and bounded."""
+"""Offline contract for bounded self-hosted Docker CI and manual five-distro runs."""
 
 from pathlib import Path
 import unittest
@@ -49,6 +49,28 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("ctest.xml", container)
         self.assertIn("test:e2e", container)
         self.assertIn("test:integration", container)
+
+    def test_all_regular_ci_jobs_use_the_debian_13_runner_and_ubuntu_containers(self):
+        runner = "runs-on: [self-hosted, Linux, X64, server-759505093]"
+        limits = "--cpuset-cpus=0-7 --memory=8g --memory-swap=8g"
+        for name, jobs, containers in (
+            ("build.yml", 4, 3),
+            ("stage4-ubuntu-vm-validation.yml", 1, 1),
+        ):
+            with self.subTest(workflow=name):
+                workflow = self.text(".github/workflows/" + name)
+                self.assertEqual(workflow.count(runner), jobs)
+                self.assertEqual(workflow.count(limits), containers)
+                self.assertNotIn("runs-on: ${{ matrix.os }}", workflow)
+                self.assertNotRegex(workflow, r"runs-on:\s*ubuntu-\d")
+                self.assertIn("github.actor == 'adrianf87'", workflow)
+                self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", workflow)
+                for image in ("ubuntu:22.04", "ubuntu:24.04", "ubuntu:26.04"):
+                    self.assertIn(image, workflow)
+
+        installer = self.text(".github/scripts/install-ci-deps.sh")
+        self.assertIn("if (( EUID != 0 )); then", installer)
+        self.assertIn('run_as_root=(sudo)', installer)
 
 
 if __name__ == "__main__":

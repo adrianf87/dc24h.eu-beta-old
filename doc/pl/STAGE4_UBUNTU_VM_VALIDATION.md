@@ -1,14 +1,16 @@
-# Etap IV: izolowane testy na maszynach Ubuntu
+# Etap IV: izolowane testy Ubuntu w Dockerze
 
-Gałąź `test/stage4-ubuntu-vm-validation` jest utworzona na podstawie `main` po
-scaleniu etapu IV (beta-0.4.13–0.4.16). Służy wyłącznie do weryfikacji; nie
-wdraża usług, nie udostępnia WebAdmin publicznie i nie zatwierdza wydania.
+Pierwotna gałąź `test/stage4-ubuntu-vm-validation` powstała na podstawie `main`
+po scaleniu etapu IV (beta-0.4.13–0.4.16). Testy znajdują się już w repozytorium;
+nie wdrażają usług, nie udostępniają WebAdmin i nie zatwierdzają wydania.
 
-## Maszyny GitHub Actions
+## Własny runner Debian 13 z kontenerami Ubuntu
 
-Workflow [Stage IV isolated Ubuntu VM validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
-uruchamia jednakowy zestaw na osobnych VM z Ubuntu **22.04**, **24.04** i
-**26.04**. Każda maszyna:
+Workflow [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
+uruchamia jednakowy zestaw w kontenerach Docker Ubuntu **22.04**, **24.04** i
+**26.04** na runnerze Debian 13 `server-759505093`. Każdy kontener ma
+osiem logicznych wątków CPU oraz limit 8 GiB RAM, bez limitu czasu CPU.
+Każde środowisko:
 
 1. Instaluje narzędzia C++20, MariaDB, OpenSSL i Apache2 za pomocą instalatora
    z limitami czasu dla repozytoriów apt.
@@ -27,15 +29,17 @@ artefakt `stage4-ubuntu-vm-<runner>` przez 7 dni.
 
 ## Wyniki i ograniczenia
 
-Wypchnięcie gałęzi lub otwarcie PR do `main` uruchamia macierz testów. Każda
-maszyna ma limit 90 minut; instalator apt ma osobne limity czasu. **Wszystkie
+Wykonanie testów PR jest ograniczone do użytkownika `adrianf87` i gałęzi
+znajdujących się w tym repozytorium (bez forków). Każdy kontener ma limit
+90 minut; instalator apt ma osobne limity czasu. **Wszystkie
 trzy zadania muszą zakończyć się sukcesem**. Test wiszący, przerwany lub
 nieuruchomiony nie jest zaliczony. Workflow sam niczego nie scala ani nie wdraża.
 
 Pomiar ADC/ADCS (12 połączeń przy 4/s) jest testem kontrolnym, **nie** testem
 wydajności docelowego procesora Intel Xeon D-1521 i 31 997 MiB RAM.
 
-Wyniki VM z Ubuntu **nie zastępują** pomiarów na docelowym Debianie 13,
+Wyniki kontenerów Ubuntu na hoście Debian 13 **nie zastępują** pomiarów
+rzeczywiście uruchomionych usług docelowych,
 odtwarzania produkcyjnej kopii MariaDB z potwierdzonym RPO/RTO, niezależnego
 audytu bezpieczeństwa ani ręcznej zgody na wydanie. Niezamknięte wymagania
 pozostają w [Issue #223](https://github.com/adrianf87/dc24h.eu-high-starter/issues/223).

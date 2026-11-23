@@ -1,14 +1,17 @@
-# Stage IV: isolated Ubuntu VM validation
+# Stage IV: isolated Ubuntu Docker validation
 
-This independent test branch is `test/stage4-ubuntu-vm-validation`, based on
-`main` after the beta-0.4.13–0.4.16 Stage IV merge. The branch is for testing;
-it does not deploy the project, enable public WebAdmin or authorize a release.
+The original test branch was `test/stage4-ubuntu-vm-validation`, based on
+`main` after the beta-0.4.13–0.4.16 Stage IV merge. The tests are retained
+in the repository; they do not deploy services, enable public WebAdmin or
+authorize a release.
 
-## GitHub-hosted runners
+## Debian 13 self-hosted runner and Ubuntu containers
 
-The [Stage IV isolated Ubuntu VM validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
-workflow runs the same operational suite on fresh GitHub-hosted Ubuntu **22.04**,
-**24.04** and **26.04** VMs. On each runner it:
+The [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
+workflow runs the same operational suite in disposable Ubuntu **22.04**,
+**24.04** and **26.04** Docker containers on the dedicated Debian 13 runner
+`server-759505093`. Each container has affinity to eight logical CPU threads,
+an 8 GiB memory ceiling, and no CPU-time quota. In each container it:
 
 1. Installs pinned-in-scope C++20, MariaDB server/client, OpenSSL and Apache2
    dependencies with the existing bounded apt-mirror installer.
@@ -25,12 +28,13 @@ workflow runs the same operational suite on fresh GitHub-hosted Ubuntu **22.04**
    Chromium and runs browser E2E, frontend unit and C++ API integration checks.
 
 The suite writes only non-secret latency/success aggregates and a CTest JUnit
-report to a seven-day artifact named `stage4-ubuntu-vm-<runner>`.
+report to a seven-day artifact named `stage4-ubuntu-vm-<image>`.
 
 ## Run and interpret
 
-Push this branch (or open a pull request to `main`) to start the matrix.
-The workflow has a 90-minute timeout per VM; the apt installer has separate
+The workflow retains PR-to-`main` and manual triggers; only actor `adrianf87`
+and same-repository PR heads may execute tests on the privileged runner.
+Each container job has a 90-minute timeout; the apt installer has separate
 network deadlines. All three jobs must finish successfully. A red, missing,
 cancelled or timed-out job is **not a pass**; inspect job logs and rerun after
 fixing the cause. The workflow does not automatically merge or deploy.
@@ -49,8 +53,10 @@ about the target Intel Xeon D-1521 with 31,997 MiB RAM.
 
 ### Evidence boundary and remaining gates
 
-- Ubuntu VM results are **not** measurements on the target Debian 13 Trixie
-  server and do not establish Debian 12/13 deployment compatibility.
+- Ubuntu container results on the Debian 13 host are **not** measurements of
+  deployed production services and do not establish Debian 12/13 deployment
+  compatibility. The separate manual five-distribution Docker suite covers
+  additional Debian 12/13 container-level validation.
 - Disposable MariaDB backup/recovery tests are **not** a production-sized
   backup restore, measured target RPO/RTO or a disaster-recovery sign-off.
 - This automated workflow does **not** replace an independent security audit,
@@ -58,5 +64,5 @@ about the target Intel Xeon D-1521 with 31,997 MiB RAM.
 - Stage IV issue [#223](https://github.com/adrianf87/dc24h.eu-high-starter/issues/223)
   must retain any such outstanding gates until real evidence is attached.
 
-Do not point the VM scripts or load probe at a public listener, shared
+Do not point the test scripts or load probe at a public listener, shared
 database or real administrator credentials.

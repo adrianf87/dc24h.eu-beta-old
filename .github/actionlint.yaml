@@ -1,6 +1,4 @@
 self-hosted-runner:
-  # ubuntu-26.04 is a public GitHub-hosted image. actionlint 1.7.12
-  # was released on 2026-03-30, before that label existed. Listing it
-  # here only teaches the linter the label. It does not select a runner.
+  # Dedicated Debian 13 runner, executing Ubuntu matrix jobs in Docker.
   labels:
-    - ubuntu-26.04
+    - server-759505093

@@ -50,9 +50,28 @@ directory is writable from the container. No host Docker socket or production
 configuration is mounted. Docker is invoked by the normal `github-runner`
 account, not via `sudo`.
 
-## Default-off policy
+## Standard CI on the self-hosted runner
 
-There are **no** push or pull request events. During initial setup, an
+The regular [C++/WebAdmin CI](../.github/workflows/build.yml) and
+[Stage IV Ubuntu checks](../.github/workflows/stage4-ubuntu-vm-validation.yml)
+are routed exclusively to this runner. Matrix jobs run inside official
+Ubuntu 22.04, 24.04 or 26.04 **Docker job containers**, with CPU affinity
+restricted to logical CPUs `0-7` and an 8 GiB RAM ceiling. This is CPU
+affinity, **not** a CPU-time quota or exclusive thread reservation. The runner
+manages container cleanup; cached images can remain on disk. Build artifacts,
+MariaDB fixtures and browser dependencies remain inside the containers.
+
+Regular CI retains its `push`, same-repository `pull_request` and manual
+triggers. Each test job is additionally restricted to actor `adrianf87` and
+rejects PR heads from forks. The required check remains named
+`CI (C++ and WebAdmin)` and will fail when its gated test jobs do not run.
+Do not expand these trust gates while the runner account has passwordless
+Docker access and sudo. Jobs are scheduled sequentially by the single runner.
+
+## Default-off five-distribution suite
+
+The separate [five-distro workflow](../.github/workflows/self-hosted-debian13-docker.yml)
+has **no** push or pull request events. During initial setup, an
 explicitly gated one-time marker commit started the first run; its temporary
 push trigger was then removed. The retained workflow is manual-only, with
 `confirm_run: DISABLED` by default and a strict opt-in value
@@ -60,6 +79,6 @@ push trigger was then removed. The retained workflow is manual-only, with
 the default branch; until this workflow is merged into `main`, the retained
 manual trigger is effectively dormant.
 
-Do not enable a permanent `push` or `pull_request` trigger for this runner.
-The Docker tests complement GitHub-hosted CI but are **not** a production
-deployment, full disaster-recovery sign-off or independent security review.
+Do not enable a permanent `push` or `pull_request` trigger for the privileged
+five-distro suite. None of these Docker tests are a production deployment,
+full disaster-recovery sign-off or independent security review.

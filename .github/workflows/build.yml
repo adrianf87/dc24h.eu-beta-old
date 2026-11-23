@@ -17,14 +17,29 @@ concurrency:
 jobs:
   cpp:
     name: C++ ${{ matrix.build_type }} - ${{ matrix.os }}
-    if: github.repository == 'adrianf87/dc24h.eu' || github.repository == 'adrianf87/dc24h.eu-high-starter'
-    runs-on: ${{ matrix.os }}
+    # Never execute fork PR code or actions from another account on this
+    # privileged, Docker-capable self-hosted machine.
+    if: >-
+      github.repository == 'adrianf87/dc24h.eu-high-starter' &&
+      github.actor == 'adrianf87' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, server-759505093]
+    container:
+      image: ${{ matrix.image }}
+      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
         build_type: [Debug, Release]
+        include:
+          - os: ubuntu-22.04
+            image: ubuntu:22.04
+          - os: ubuntu-24.04
+            image: ubuntu:24.04
+          - os: ubuntu-26.04
+            image: ubuntu:26.04
     env:
       CXX: g++
       CI: 'true'
@@ -44,20 +59,33 @@ jobs:
         run: cmake -S . -B "build/$BUILD_TYPE" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DBUILD_TESTING=ON -DDC24H_REQUIRE_INTEGRATION_TESTS=ON
 
       - name: Build
-        run: cmake --build "build/$BUILD_TYPE" --parallel "$(nproc)"
+        run: cmake --build "build/$BUILD_TYPE" --parallel 4
 
       - name: Test
-        run: ctest --test-dir "build/$BUILD_TYPE" --parallel "$(nproc)" --output-on-failure
+        run: ctest --test-dir "build/$BUILD_TYPE" --parallel 2 --output-on-failure
 
   webadmin:
     name: WebAdmin - ${{ matrix.os }}
-    if: github.repository == 'adrianf87/dc24h.eu' || github.repository == 'adrianf87/dc24h.eu-high-starter'
-    runs-on: ${{ matrix.os }}
+    if: >-
+      github.repository == 'adrianf87/dc24h.eu-high-starter' &&
+      github.actor == 'adrianf87' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, server-759505093]
+    container:
+      image: ${{ matrix.image }}
+      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        include:
+          - os: ubuntu-22.04
+            image: ubuntu:22.04
+          - os: ubuntu-24.04
+            image: ubuntu:24.04
+          - os: ubuntu-26.04
+            image: ubuntu:26.04
     env:
       CXX: g++
       CI: 'true'
@@ -81,7 +109,7 @@ jobs:
       - name: Build Release C++ API for browser integration
         run: |
           cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-          cmake --build build/Release --target dc24h --parallel "$(nproc)"
+          cmake --build build/Release --target dc24h --parallel 4
 
       - name: Install frontend dependencies
         working-directory: webadmin
@@ -97,7 +125,7 @@ jobs:
 
       - name: Frontend unit tests
         working-directory: webadmin
-        run: node --import tsx --test --test-concurrency="$(nproc)" tests/*.test.ts
+        run: node --import tsx --test --test-concurrency=2 tests/*.test.ts
 
       - name: Install Chromium and system dependencies
         working-directory: webadmin
@@ -105,7 +133,7 @@ jobs:
 
       - name: Browser tests
         working-directory: webadmin
-        run: npm run test:e2e -- --workers="$(nproc)" --fully-parallel
+        run: npm run test:e2e -- --workers=2 --fully-parallel
 
       - name: Real C++ API integration
         working-directory: webadmin
@@ -113,8 +141,14 @@ jobs:
 
   sanitizers:
     name: C++ ${{ matrix.sanitizer }} - ubuntu-24.04
-    if: github.repository == 'adrianf87/dc24h.eu' || github.repository == 'adrianf87/dc24h.eu-high-starter'
-    runs-on: ubuntu-24.04
+    if: >-
+      github.repository == 'adrianf87/dc24h.eu-high-starter' &&
+      github.actor == 'adrianf87' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, server-759505093]
+    container:
+      image: ubuntu:24.04
+      options: --cpuset-cpus=0-7 --memory=8g --memory-swap=8g --pids-limit=512 --security-opt=no-new-privileges --cap-drop=NET_RAW --cap-drop=SYS_ADMIN
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -138,7 +172,7 @@ jobs:
         run: cmake -S . -B "build/sanitizer-${{ matrix.sanitizer }}" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DDC24H_SANITIZER="${{ matrix.sanitizer }}"
 
       - name: Build instrumented unit tests
-        run: cmake --build "build/sanitizer-${{ matrix.sanitizer }}" --parallel "$(nproc)"
+        run: cmake --build "build/sanitizer-${{ matrix.sanitizer }}" --parallel 4
 
       - name: Run sanitizer and security regression subset
         run: ctest --test-dir "build/sanitizer-${{ matrix.sanitizer }}" --output-on-failure -R '^(memory\.safety|adc\.security|security\.unit|api\.unit|beta\.baseline)$'
@@ -148,7 +182,7 @@ jobs:
     name: CI (C++ and WebAdmin)
     needs: [cpp, webadmin, sanitizers]
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, server-759505093]
     timeout-minutes: 5
     steps:
       - name: Ensure all C++ and WebAdmin checks passed

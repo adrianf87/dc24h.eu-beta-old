@@ -22,20 +22,13 @@ def check(path, phrases, errors):
     return text
 
 
-def check_no_custom_workers(errors):
+def check_no_stale_runner_refs(errors):
     needles = (
         "contabo",
         "hetzner",
         "747585786",
         "proxmox",
-        "github-runner",
         "ci-controller",
-        "custom-runner",
-        "custom runner",
-        "self-hosted",
-        "własnego runnera",
-        "własny runner",
-        "własnym runner",
     )
     paths = [ROOT / "README.md", ROOT / "CHANGELOG.md"]
     paths.extend((ROOT / "doc").rglob("*.md"))
@@ -49,8 +42,8 @@ def check_no_custom_workers(errors):
     actionlint = (ROOT / ".github" / "actionlint.yaml").read_text(encoding="utf-8")
     require("server-747585786" not in actionlint,
             "actionlint.yaml: custom runner label remains", errors)
-    require("ubuntu-26.04" in actionlint,
-            "actionlint.yaml: public ubuntu-26.04 label is missing", errors)
+    require("server-759505093" in actionlint,
+            "actionlint.yaml: current self-hosted runner label is missing", errors)
 
 
 def main():
@@ -66,7 +59,7 @@ def main():
     check(ROOT / "cmake/version.hpp.in", ('inline constexpr std::string_view version = "@DC24H_VERSION@";',), errors)
     workflow = check(ROOT / ".github/workflows/build.yml", (
         "os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]",
-        "runs-on: ${{ matrix.os }}",
+        "runs-on: [self-hosted, Linux, X64, server-759505093]",
         'beta-0.3.1-12-full',
         'sanitizer: [address, undefined]',
         'npm audit --omit=dev --audit-level=high',
@@ -79,17 +72,21 @@ def main():
         "name: CI (C++ and WebAdmin)",
     ), errors)
     require(workflow.count("os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]") == 2,
-            "build.yml: both jobs must list the three public images", errors)
-    require(workflow.count("runs-on: ${{ matrix.os }}") == 2,
-            "build.yml: both jobs must use the public image matrix", errors)
+            "build.yml: both jobs must list the three Ubuntu container images", errors)
+    require(workflow.count("runs-on: [self-hosted, Linux, X64, server-759505093]") == 4,
+            "build.yml: every job must use the dedicated self-hosted runner", errors)
+    require(workflow.count("--cpuset-cpus=0-7 --memory=8g --memory-swap=8g") == 3,
+            "build.yml: each test job must use eight CPU threads and 8 GiB RAM in Docker", errors)
+    require(workflow.count("image: ${{ matrix.image }}") == 2,
+            "build.yml: C++ and WebAdmin must select Ubuntu Docker images", errors)
     require('test "$(nproc)" -eq 4' not in workflow,
             "build.yml: fixed runner CPU count is not portable", errors)
     require(workflow.count("github.repository == 'adrianf87/dc24h.eu-high-starter'") == 3,
             "build.yml: High Starter repository must run C++, WebAdmin and sanitizers", errors)
     require("needs: [cpp, webadmin, sanitizers]" in workflow,
             "build.yml: sanitizer failures must block the required CI result", errors)
-    require("server-747585786" not in workflow, "build.yml: custom runner is selected", errors)
-    require("self-hosted" not in workflow, "build.yml: self-hosted runner is selected", errors)
+    require("server-747585786" not in workflow, "build.yml: stale runner is selected", errors)
+    require("runs-on: ubuntu-" not in workflow, "build.yml: GitHub-hosted runner remains", errors)
     require("ubuntu-latest" not in workflow, "build.yml: ubuntu-latest is selected", errors)
     check(ROOT / "README.md", (
         "# dc24h.eu High Starter",
@@ -306,7 +303,7 @@ def main():
         'require(entries[9].info.version == 10 && entries[9].info.name == "configuration_audit");',
         'require(entries[10].info.version == 11 && entries[10].info.name == "hub_service_audit");',
     ), errors)
-    check_no_custom_workers(errors)
+    check_no_stale_runner_refs(errors)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
