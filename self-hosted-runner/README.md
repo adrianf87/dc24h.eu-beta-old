@@ -54,9 +54,9 @@ account, not via `sudo`.
 ## Standard CI on the self-hosted runner
 
 The regular [C++/WebAdmin CI](../.github/workflows/build.yml) and
-[Stage IV Ubuntu checks](../.github/workflows/stage4-ubuntu-vm-validation.yml)
+[Stage IV Linux checks](../.github/workflows/stage4-ubuntu-vm-validation.yml)
 are routed exclusively to this runner. Matrix jobs run inside official
-Ubuntu 22.04, 24.04 or 26.04 **Docker job containers**, with CPU affinity
+Debian 12/13 or Ubuntu 22.04/24.04/26.04 **Docker job containers**, with CPU affinity
 restricted to logical CPUs `0-15` and a 32 GiB RAM ceiling. This is CPU
 affinity, **not** a CPU-time quota or exclusive thread reservation. The runner
 manages container cleanup; cached images can remain on disk. Build artifacts,
@@ -88,6 +88,9 @@ push trigger was then removed. The retained workflow is manual-only, with
 the default branch; until this workflow is merged into `main`, the retained
 manual trigger is effectively dormant.
 
+The standard C++/WebAdmin and Stage IV workflows independently cover the five
+distributions automatically; this manual suite additionally verifies CPU and
+memory cgroup contracts and runs its own sequential full-distro harness.
 Do not enable a permanent `push` or `pull_request` trigger for the privileged
-five-distro suite. None of these Docker tests are a production deployment,
+manual suite. None of these Docker tests are a production deployment,
 full disaster-recovery sign-off or independent security review.

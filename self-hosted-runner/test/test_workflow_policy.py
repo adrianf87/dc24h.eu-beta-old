@@ -50,7 +50,7 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("test:e2e", container)
         self.assertIn("test:integration", container)
 
-    def test_all_regular_ci_jobs_use_the_debian_13_runner_and_ubuntu_containers(self):
+    def test_all_regular_ci_jobs_use_the_debian_13_runner_and_five_distro_containers(self):
         runner = "runs-on: [self-hosted, Linux, X64, server-747585786]"
         limits = "--cpuset-cpus=0-15 --memory=32g --memory-swap=32g"
         for name, jobs, containers in (
@@ -65,8 +65,14 @@ class RunnerPolicy(unittest.TestCase):
                 self.assertNotRegex(workflow, r"runs-on:\s*ubuntu-\d")
                 self.assertIn("github.actor == 'adrianf87'", workflow)
                 self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", workflow)
-                for image in ("ubuntu:22.04", "ubuntu:24.04", "ubuntu:26.04"):
-                    self.assertIn(image, workflow)
+                self.assertEqual(workflow.count("os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]"),
+                                 2 if name == "build.yml" else 1)
+                for distro, image in (("debian-12", "debian:12"), ("debian-13", "debian:13"),
+                                      ("ubuntu-22.04", "ubuntu:22.04"),
+                                      ("ubuntu-24.04", "ubuntu:24.04"),
+                                      ("ubuntu-26.04", "ubuntu:26.04")):
+                    self.assertIn("- os: " + distro, workflow)
+                    self.assertIn("image: " + image, workflow)
 
         installer = self.text(".github/scripts/install-ci-deps.sh")
         self.assertIn("if (( EUID != 0 )); then", installer)

@@ -58,7 +58,7 @@ def main():
     require('set(DC24H_VERSION "alpha-' not in cmake, "CMakeLists.txt: alpha version string remains", errors)
     check(ROOT / "cmake/version.hpp.in", ('inline constexpr std::string_view version = "@DC24H_VERSION@";',), errors)
     workflow = check(ROOT / ".github/workflows/build.yml", (
-        "os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]",
+        "os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]",
         "runs-on: [self-hosted, Linux, X64, server-747585786]",
         'beta-0.3.1-12-full',
         'sanitizer: [address, undefined]',
@@ -71,14 +71,14 @@ def main():
         "pull_request:",
         "name: CI (C++ and WebAdmin)",
     ), errors)
-    require(workflow.count("os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]") == 2,
-            "build.yml: both jobs must list the three Ubuntu container images", errors)
+    require(workflow.count("os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]") == 2,
+            "build.yml: both jobs must list all five Debian and Ubuntu container images", errors)
     require(workflow.count("runs-on: [self-hosted, Linux, X64, server-747585786]") == 4,
             "build.yml: every job must use the dedicated self-hosted runner", errors)
     require(workflow.count("--cpuset-cpus=0-15 --memory=32g --memory-swap=32g") == 3,
             "build.yml: each test job must use sixteen CPU threads and 32 GiB RAM in Docker", errors)
     require(workflow.count("image: ${{ matrix.image }}") == 2,
-            "build.yml: C++ and WebAdmin must select Ubuntu Docker images", errors)
+            "build.yml: C++ and WebAdmin must select the five Docker distributions", errors)
     require('test "$(nproc)" -eq 4' not in workflow,
             "build.yml: fixed runner CPU count is not portable", errors)
     require(workflow.count("github.repository == 'adrianf87/dc24h.eu-high-starter'") == 3,

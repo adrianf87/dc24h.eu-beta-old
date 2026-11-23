@@ -1,14 +1,14 @@
-# Etap IV: izolowane testy Ubuntu w Dockerze
+# Etap IV: izolowane testy Linuksa w Dockerze
 
 Pierwotna gałąź `test/stage4-ubuntu-vm-validation` powstała na podstawie `main`
 po scaleniu etapu IV (beta-0.4.13–0.4.16). Testy znajdują się już w repozytorium;
 nie wdrażają usług, nie udostępniają WebAdmin i nie zatwierdzają wydania.
 
-## Własny runner Debian 13 z kontenerami Ubuntu
+## Własny runner Debian 13 z pięcioma dystrybucjami w kontenerach
 
-Workflow [Stage IV isolated Ubuntu Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
-uruchamia jednakowy zestaw w kontenerach Docker Ubuntu **22.04**, **24.04** i
-**26.04** na runnerze Linux x64 `server-747585786`. Każdy kontener ma
+Workflow [Stage IV isolated Linux Docker validation](../../.github/workflows/stage4-ubuntu-vm-validation.yml)
+uruchamia jednakowy zestaw w kontenerach Docker Debian **12/13** oraz Ubuntu
+**22.04/24.04/26.04** na runnerze Linux x64 `server-747585786`. Każdy kontener ma
 szesnaście logicznych wątków CPU oraz limit 32 GiB RAM, bez limitu czasu CPU.
 Każde środowisko:
 
@@ -25,20 +25,20 @@ Każde środowisko:
    testy przeglądarkowe E2E, jednostkowe i integrację z rzeczywistym API C++.
 
 Niepoufne wyniki opóźnień oraz raport CTest JUnit są przechowywane jako
-artefakt `stage4-ubuntu-vm-<runner>` przez 7 dni.
+artefakt `stage4-linux-docker-<image>` przez 7 dni.
 
 ## Wyniki i ograniczenia
 
 Wykonanie testów PR jest ograniczone do użytkownika `adrianf87` i gałęzi
 znajdujących się w tym repozytorium (bez forków). Każdy kontener ma limit
 90 minut; instalator apt ma osobne limity czasu. **Wszystkie
-trzy zadania muszą zakończyć się sukcesem**. Test wiszący, przerwany lub
+pięć zadań musi zakończyć się sukcesem**. Test wiszący, przerwany lub
 nieuruchomiony nie jest zaliczony. Workflow sam niczego nie scala ani nie wdraża.
 
 Pomiar ADC/ADCS (12 połączeń przy 4/s) jest testem kontrolnym, **nie** testem
 wydajności docelowego procesora Intel Xeon D-1521 i 31 997 MiB RAM.
 
-Wyniki kontenerów Ubuntu na własnym hoście Linux **nie zastępują** pomiarów
+Wyniki kontenerów Debian/Ubuntu na własnym hoście Linux **nie zastępują** pomiarów
 rzeczywiście uruchomionych usług docelowych,
 odtwarzania produkcyjnej kopii MariaDB z potwierdzonym RPO/RTO, niezależnego
 audytu bezpieczeństwa ani ręcznej zgody na wydanie. Niezamknięte wymagania

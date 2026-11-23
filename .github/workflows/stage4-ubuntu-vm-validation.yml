@@ -1,4 +1,4 @@
-name: Stage IV isolated Ubuntu Docker validation
+name: Stage IV isolated Linux Docker validation
 
 on:
   push:
@@ -29,8 +29,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
         include:
+          - os: debian-12
+            image: debian:12
+          - os: debian-13
+            image: debian:13
           - os: ubuntu-22.04
             image: ubuntu:22.04
           - os: ubuntu-24.04
@@ -99,7 +103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: stage4-ubuntu-vm-${{ matrix.os }}
+          name: stage4-linux-docker-${{ matrix.os }}
           path: vm-evidence/
           if-no-files-found: warn
           retention-days: 7
