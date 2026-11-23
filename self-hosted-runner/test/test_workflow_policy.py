@@ -18,6 +18,7 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("github.actor == 'adrianf87'", workflow)
         self.assertIn("runs-on: [self-hosted, Linux, X64, server-759505093]", workflow)
         self.assertIn("persist-credentials: false", workflow)
+        self.assertNotIn("  push:\n", workflow)
         self.assertNotIn("pull_request:", workflow)
         self.assertNotIn("pull_request_target:", workflow)
 

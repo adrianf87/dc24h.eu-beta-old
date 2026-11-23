@@ -1,10 +1,7 @@
 name: Self-hosted Debian 13 - isolated five-distro Docker validation
 
-# The one-time push trigger is only for initial provisioning on this branch.
-# Remove it after the requested first run; the manual input defaults to OFF.
+# No push or PR trigger: this high-trust runner is manual-only and defaults OFF.
 on:
-  push:
-    branches: [test/self-hosted-debian13-docker-matrix]
   workflow_dispatch:
     inputs:
       confirm_run:
@@ -26,8 +23,8 @@ jobs:
     if: >-
       github.repository == 'adrianf87/dc24h.eu-high-starter' &&
       github.actor == 'adrianf87' &&
-      ((github.event_name == 'workflow_dispatch' && inputs.confirm_run == 'RUN-FIVE-DISTROS') ||
-       (github.event_name == 'push' && github.event.head_commit.message == 'ci(self-hosted): run five distro containers once'))
+      github.event_name == 'workflow_dispatch' &&
+      inputs.confirm_run == 'RUN-FIVE-DISTROS'
     runs-on: [self-hosted, Linux, X64, server-759505093]
     timeout-minutes: 300
     steps:

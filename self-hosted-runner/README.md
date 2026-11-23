@@ -52,11 +52,11 @@ account, not via `sudo`.
 
 ## Default-off policy
 
-There are **no** pull request events. During initial setup, the temporary
-branch push trigger runs a job only for an exact one-time marker commit by
-`adrianf87`. After that run, the push trigger is removed. The retained
-workflow is manual-only, with `confirm_run: DISABLED` by default and a strict
-opt-in value `RUN-FIVE-DISTROS`. GitHub only exposes workflow dispatch from
+There are **no** push or pull request events. During initial setup, an
+explicitly gated one-time marker commit started the first run; its temporary
+push trigger was then removed. The retained workflow is manual-only, with
+`confirm_run: DISABLED` by default and a strict opt-in value
+`RUN-FIVE-DISTROS`. GitHub only exposes workflow dispatch from
 the default branch; until this workflow is merged into `main`, the retained
 manual trigger is effectively dormant.
 
