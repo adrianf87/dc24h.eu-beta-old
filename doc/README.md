@@ -1,6 +1,8 @@
 # dc24h.eu High Starter technical documentation
 
-Current development version: beta-0.4.7.
+Current development version: beta-0.4.8.
+
+[Beta-0.4.5–beta-0.4.8 Stage II: WebAuthn passkeys, enrollment, login and recovery](us/BETA_0.4_STAGE_II.md) · [PL](pl/BETA_0.4_STAGE_II.md)
 
 [Beta-0.4.1–beta-0.4.4 Stage I: CI, architecture, MFA rotation and durable audit](us/BETA_0.4_STAGE_I.md) · [PL](pl/BETA_0.4_STAGE_I.md)
 

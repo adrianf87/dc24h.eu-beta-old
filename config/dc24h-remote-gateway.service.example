@@ -1,4 +1,4 @@
-# Example for a separate, local-only beta-0.4.7 gateway.
+# Example for a separate, local-only beta-0.4.8 gateway.
 # Must be reviewed and installed deliberately; it is never enabled by build.
 # The account must be allowed to read the dedicated local API token and socket.
 # Never set DC24H_REMOTE_PUBLIC or bind the service to a public interface.

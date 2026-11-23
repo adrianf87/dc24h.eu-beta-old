@@ -4,7 +4,7 @@ import { parseRemoteSummaryResponse } from "../src/lib/remote-status.ts";
 
 const status = {
   schema: 1, mode: "read-only",
-  server: { version: "beta-0.4.7", running: true, uptime_seconds: 130 },
+  server: { version: "beta-0.4.8", running: true, uptime_seconds: 130 },
   network: { active_connections: 3, accepted_connections: 20 },
   users: { online: 2, peak_online: 7 },
   chat: { received: 12, rejected: 1 },

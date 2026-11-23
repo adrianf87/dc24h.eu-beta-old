@@ -1,6 +1,8 @@
 # dc24h.eu High Starter documentation
 
-beta-0.4.4: Stage I beta-0.4 adds CI/stability regression guards, a WebAuthn security design, offline TOTP rotation/recovery and a private durable, bounded gateway audit store. Hub, API, controller and WebAdmin report beta-0.4.4. The project is dc24h.eu High Starter. The protocol identity `dc24h.eu`, public proxy and schema v11 remain unchanged. No Internet-facing WebAdmin, implemented WebAuthn login, remote administrative write or production deployment is included. Default development language: EN/US UTF-8.
+beta-0.4.8: Stage II adds local password + passkey WebAuthn authentication, private credential storage, device management and offline recovery. This is **not passwordless** and does not enable Internet-facing WebAdmin, remote administrative hub writes, schema changes or production deployment. Hub, API, controller and WebAdmin report beta-0.4.8. The project is dc24h.eu High Starter; ADC/ADCS identity `dc24h.eu` and public proxy remain unchanged. Default development language: EN/US UTF-8.
+
+- [Beta-0.4.5–beta-0.4.8 Stage II](BETA_0.4_STAGE_II.md) · [PL](../pl/BETA_0.4_STAGE_II.md)
 
 - [Beta-0.4.1–beta-0.4.4 Stage I](BETA_0.4_STAGE_I.md) · [PL](../pl/BETA_0.4_STAGE_I.md)
 

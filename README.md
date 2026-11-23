@@ -2,7 +2,9 @@
 
 Direct Connect Hub server implemented in C++20 for Linux (Debian and Ubuntu).
 
-**Current development version: beta-0.4.7 (Stage II implementation in progress; Stage I: beta-0.4.1–beta-0.4.4; local-only WebAdmin with optional private SSH pilot, not a production release).**
+**Current development version: beta-0.4.8 (Stage II: beta-0.4.5–beta-0.4.8; local-only password + passkey WebAdmin with optional private SSH pilot, not a production release).**
+
+- **beta-0.4.5–beta-0.4.8 Stage II — passkeys and devices**: add fixed-origin WebAuthn credential verification, a private fsynced credential catalog, password + passkey second-factor login, one-time enrollment challenges, device listing/renaming/revocation, actor-wide session invalidation and controlled offline recovery. C++ remains the password/role authority; this is **not passwordless**. No new MariaDB migration, public listener, remote hub writes or automatic deployment. [Stage II technical/operator guide](doc/us/BETA_0.4_STAGE_II.md) | [PL](doc/pl/BETA_0.4_STAGE_II.md).
 
 - **beta-0.4.1–beta-0.4.4 Stage I — security foundations** (branch `beta-0.4.1-0.4.4-stage1`): close beta-0.3 CI regressions; document local trust boundaries and future WebAuthn; implement offline TOTP replacement/recovery with preserved replay state, and a private fsynced audit chain with explicit loss detection and fail-closed logins. No public listener, WebAuthn ceremony, remote administrative write, migration, merge or deployment. [Stage plan](doc/us/BETA_0.4_STAGE_I.md) | [PL](doc/pl/BETA_0.4_STAGE_I.md).
 

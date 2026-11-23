@@ -1,6 +1,8 @@
 # Dokumentacja dc24h.eu High Starter
 
-beta-0.4.4: Etap I beta 0.4 dodaje testy stabilności, projekt WebAuthn, lokalną rotację i odzyskiwanie TOTP oraz prywatny, trwały i ograniczony dziennik audytu. Hub, API, kontroler i WebAdmin raportują beta-0.4.4; nazwa projektu to dc24h.eu High Starter. Identyfikator protokołu `dc24h.eu`, schemat v11 i publiczne proxy Apache pozostają bez zmian. Brak publicznego WebAdmin, wdrożonego logowania WebAuthn, zdalnego zapisu i instalacji produkcyjnej.
+beta-0.4.8: Etap II dodaje lokalne logowanie **hasło + passkey** (nie bezhasłowe), prywatny katalog kluczy publicznych, listę i unieważnianie urządzeń oraz awaryjne odzyskiwanie offline. Hub, API, kontroler i WebAdmin raportują beta-0.4.8. Identyfikator protokołu `dc24h.eu`, schemat v11 i publiczne proxy Apache pozostają bez zmian. Bez publicznego WebAdmin, zdalnego zapisu i instalacji produkcyjnej.
+
+- [Etap II beta-0.4.5–beta-0.4.8](BETA_0.4_STAGE_II.md) · [EN/US](../us/BETA_0.4_STAGE_II.md)
 
 - [Etap I beta-0.4.1–beta-0.4.4](BETA_0.4_STAGE_I.md) · [EN](../us/BETA_0.4_STAGE_I.md)
 

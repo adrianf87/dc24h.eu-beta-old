@@ -1,6 +1,6 @@
 # dc24h.eu WebAdmin
 
-The current development UI is `beta-0.4.4` (dc24h.eu High Starter). The beta-0.4.1–0.4.4 Stage I patch adds offline TOTP rotation/recovery, an owner-only durable audit chain and fail-closed remote authentication when auditing is unavailable. See the [Stage I security plan](../doc/us/BETA_0.4_STAGE_I.md) ([PL](../doc/pl/BETA_0.4_STAGE_I.md)). The previous beta-0.3 stages added private TOTP, replay protection, HTTPS/systemd and the optional [SSH pilot](../doc/us/REMOTE_PILOT.md). The local Owner-only service controls remain in [Hub WebAdmin](../doc/us/HUB_WEBADMIN.md). Neither the public Apache example nor the remote gateway forwards service-control commands. Public exposure and WebAuthn login remain disabled.
+The current development UI is `beta-0.4.8` (dc24h.eu High Starter). Stage II adds WebAuthn **password + passkey** login (not passwordless), enrollment, a private credential catalog, device management, and offline recovery. See the [EN/US Stage II guide](../doc/us/BETA_0.4_STAGE_II.md) ([PL](../doc/pl/BETA_0.4_STAGE_II.md)). Stage I added offline TOTP rotation/recovery and a durable audit chain ([EN/US](../doc/us/BETA_0.4_STAGE_I.md), [PL](../doc/pl/BETA_0.4_STAGE_I.md)). The local Owner-only service controls remain in [Hub WebAdmin](../doc/us/HUB_WEBADMIN.md). Neither the public Apache example nor the remote gateway forwards service-control commands. Public exposure remains disabled.
 
 alpha-0.8.1: see [Permissions](../doc/us/PERMISSIONS.md) for the seven-role catalog, pending-action flags, safe VIP delegation and stopped-hub role changes.
 
@@ -30,10 +30,14 @@ this WebAdmin root. Never use `VITE_*` for credentials.
 `npm run preview` serves a static build with API disabled. beta-0.2 adds
 an optional independent loopback gateway with server-side sessions:
 set private DC24H_API_SOCKET, DC24H_API_TOKEN_FILE,
-DC24H_REMOTE_MFA_FILE, DC24H_REMOTE_MFA_REPLAY_FILE and
-DC24H_REMOTE_ORIGIN=https://localhost:8443 and use npm run remote:local.
+DC24H_REMOTE_MFA_FILE, DC24H_REMOTE_MFA_REPLAY_FILE,
+DC24H_REMOTE_AUDIT_FILE, DC24H_REMOTE_PASSKEY_FILE,
+DC24H_REMOTE_RP_ID=localhost and DC24H_REMOTE_ORIGIN=https://localhost:8443,
+then use npm run remote:local.
 Only the separate localhost HTTPS Apache example exposes its fixed /remote/v1
-routes. Public authenticated access is **not** enabled; only local TOTP is available.
+routes. Public authenticated access is **not** enabled; local password+TOTP
+and password+passkey are available. Keep the passkey file in the same private
+owner-only location as the TOTP/replay/audit files, never the static root.
 Production web sessions, public access and remote mutations remain planned.
 
 See [setup and architecture (US)](../doc/us/WEBADMIN.md) or

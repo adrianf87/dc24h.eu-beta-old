@@ -111,7 +111,7 @@ class ApiProcessTests(unittest.TestCase):
         self.assertEqual(directory, {'schema': 1, 'truncated': False, 'users': []})
         snapshot = fetch_status(fx.endpoint, fx.token)
         self.assertEqual(snapshot['api_version'], 'v1')
-        self.assertEqual(snapshot['server']['version'], 'beta-0.4.7')
+        self.assertEqual(snapshot['server']['version'], 'beta-0.4.8')
         self.assertTrue(snapshot['server']['core_running'])
         board = snapshot['dashboard']
         self.assertEqual(board['schema'], 1)
