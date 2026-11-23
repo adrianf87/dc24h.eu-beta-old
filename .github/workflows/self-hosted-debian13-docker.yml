@@ -1,0 +1,54 @@
+name: Self-hosted Debian 13 - isolated five-distro Docker validation
+
+# The one-time push trigger is only for initial provisioning on this branch.
+# Remove it after the requested first run; the manual input defaults to OFF.
+on:
+  push:
+    branches: [test/self-hosted-debian13-docker-matrix]
+  workflow_dispatch:
+    inputs:
+      confirm_run:
+        description: 'Type RUN-FIVE-DISTROS to allow a manual isolated test run'
+        required: true
+        default: 'DISABLED'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dc24h-selfhost-five-distros-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  isolated-distros:
+    name: Debian 12/13 and Ubuntu 22.04/24.04/26.04 (8 threads, 8 GiB)
+    # Never execute PR code on a runner with passwordless Docker/sudo.
+    if: >-
+      github.repository == 'adrianf87/dc24h.eu-high-starter' &&
+      github.actor == 'adrianf87' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.confirm_run == 'RUN-FIVE-DISTROS') ||
+       (github.event_name == 'push' && github.event.head_commit.message == 'ci(self-hosted): run five distro containers once'))
+    runs-on: [self-hosted, Linux, X64, server-759505093]
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          clean: true
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+
+      - name: Run disposable OS validation sequentially inside Docker
+        shell: bash
+        run: bash self-hosted-runner/test/run-matrix.sh
+
+      - name: Upload non-secret local test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: self-hosted-five-distros-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/dc24h-container-results/${{ github.run_id }}-${{ github.run_attempt }}/
+          if-no-files-found: warn
+          retention-days: 7
