@@ -62,6 +62,14 @@ affinity, **not** a CPU-time quota or exclusive thread reservation. The runner
 manages container cleanup; cached images can remain on disk. Build artifacts,
 MariaDB fixtures and browser dependencies remain inside the containers.
 
+The integration-enabled C++ and Stage IV container jobs install the `systemd`
+package to provide `systemd-analyze` and `systemd-sysusers`. They validate the
+shipped unit directives and isolated sysusers creation, but the two live
+`systemd-run` sandbox checks are explicitly **skipped** when there is no
+running systemd system manager (as in standard Docker job containers).
+Runtime sandbox enforcement still requires a separately authorized test on
+an actual systemd host or VM; CI must not mount the host systemd socket.
+
 Regular CI retains its `push`, same-repository `pull_request` and manual
 triggers. Each test job is additionally restricted to actor `adrianf87` and
 rejects PR heads from forks. The required check remains named

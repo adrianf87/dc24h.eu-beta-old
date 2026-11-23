@@ -72,6 +72,25 @@ class RunnerPolicy(unittest.TestCase):
         self.assertIn("if (( EUID != 0 )); then", installer)
         self.assertIn('run_as_root=(sudo)', installer)
 
+    def test_required_systemd_tools_and_runtime_sandbox_boundary(self):
+        for name in ("build.yml", "stage4-ubuntu-vm-validation.yml"):
+            with self.subTest(workflow=name):
+                workflow = self.text(".github/workflows/" + name)
+                self.assertIn("mariadb-server apache2 systemd", workflow)
+                self.assertIn("-DDC24H_REQUIRE_INTEGRATION_TESTS=ON", workflow)
+
+        sandbox = self.text("tests/systemd_sandbox_tests.py")
+        self.assertIn('Path("/run/systemd/private").is_socket()', sandbox)
+        self.assertIn('Path("/run/systemd/system").is_dir()', sandbox)
+        for test in ("test_hub_under_sandbox", "test_sandbox_rejects_host_writes"):
+            with self.subTest(test=test):
+                body = sandbox.split("    def " + test + "(self):", 1)[1].split("\n    def ", 1)[0]
+                self.assertIn("self.require_systemd_manager()", body)
+        for test in ("test_shipped_directives", "test_verify_and_private_sysusers"):
+            with self.subTest(test=test):
+                body = sandbox.split("    def " + test + "(self):", 1)[1].split("\n    def ", 1)[0]
+                self.assertNotIn("self.require_systemd_manager()", body)
+
 
 if __name__ == "__main__":
     unittest.main()

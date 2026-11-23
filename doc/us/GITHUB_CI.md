@@ -10,4 +10,6 @@ Three job types run on each of those three images: C++ Debug, C++ Release and We
 
 Concurrency uses one group per workflow and ref, `dc24h-github-` plus the workflow name and ref, with `cancel-in-progress: false`. The C++ job has a 120-minute timeout and the WebAdmin job has a 60-minute timeout. The required check name is still `CI (C++ and WebAdmin)`. The separate Stage IV Ubuntu matrix also uses this self-hosted runner and Docker. The five-distribution Debian/Ubuntu suite remains a separate **manual-only, default-off** workflow. Check each run under [GitHub Actions](https://github.com/adrianf87/dc24h.eu-high-starter/actions/workflows/build.yml) for actual results. CI completion is not awaited.
 
+Integration-enabled C++ and Stage IV jobs install the `systemd` CLI package in each Ubuntu image. The `systemd.sandbox` test always validates unit hardening rules and private `systemd-sysusers` behavior. Its two live `systemd-run` tests skip when the container has no active systemd manager; they must be exercised separately on an authorized host/VM with systemd. Do not grant Docker CI access to the host's systemd socket to work around this limitation.
+
 Push triggers CI; remote completion is not awaited.

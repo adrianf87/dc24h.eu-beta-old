@@ -197,7 +197,14 @@ class SystemdSandboxTests(unittest.TestCase):
         ])
         return properties
 
+    def require_systemd_manager(self):
+        # Docker CI images include systemd CLI tools but do not boot systemd as
+        # PID 1. Never connect test containers to the host's system manager.
+        if not Path("/run/systemd/system").is_dir() or not Path("/run/systemd/private").is_socket():
+            self.skipTest("live systemd sandbox requires an active system manager (host or systemd VM)")
+
     def test_hub_under_sandbox(self):
+        self.require_systemd_manager()
         if os.environ.get("DC24H_SANITIZER") in {"address", "thread"}:
             self.skipTest("MemoryDenyWriteExecute blocks this sanitizer runtime; the shipped unit is unchanged")
         if os.geteuid() != 0:
@@ -268,6 +275,7 @@ class SystemdSandboxTests(unittest.TestCase):
             shutil.rmtree(Path("/run") / name, ignore_errors=True)
 
     def test_sandbox_rejects_host_writes(self):
+        self.require_systemd_manager()
         if os.geteuid() != 0:
             self.skipTest("systemd sandbox requires root or passwordless sudo")
         name = "dc24h-write-" + secrets.token_hex(4)
